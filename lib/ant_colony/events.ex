@@ -6,15 +6,21 @@ defmodule AntColony.Events do
   - Topic constants for PubSub communication
   - Type specifications for simulation events
   - Accessor functions for topic names
+  - Broadcast helper functions with error handling
+  - Subscribe helper functions
+  - Validation functions for event data
 
   ## Topics
 
   * `:simulation` - Events related to ant behavior and simulation state
   * `:ui_updates` - Events for UI updates (reserved for Phase 2)
 
-  ## Event Types
+  ## Event Metadata
 
-  Events are represented as tuples with the first element being the event type atom.
+  Broadcast functions accept an optional keyword list of metadata that is
+  automatically included with a timestamp. Events are broadcast as:
+
+      {event_type, event_data, %{timestamp: DateTime.t(), user_metadata: map()}}
 
   ### Examples
 
@@ -23,7 +29,18 @@ defmodule AntColony.Events do
 
       iex> AntColony.Events.ui_updates_topic()
       "ui_updates"
+
+      # Broadcast with metadata
+      AntColony.Events.broadcast_ant_moved(
+        AntColony.PubSub,
+        "ant_1",
+        {0, 0},
+        {1, 1},
+        source: "sensor"
+      )
   """
+
+  require Logger
 
   @type position :: {integer(), integer()}
 
@@ -67,6 +84,20 @@ defmodule AntColony.Events do
   @spec ui_updates_topic() :: String.t()
   def ui_updates_topic, do: @topic_ui_updates
 
+  # Metadata Helper Functions
+
+  @doc """
+  Returns the current UTC timestamp as a DateTime.
+
+  ## Examples
+
+      iex> timestamp = AntColony.Events.get_timestamp()
+      iex> timestamp.__struct__ == DateTime
+      true
+  """
+  @spec get_timestamp() :: DateTime.t()
+  def get_timestamp, do: DateTime.utc_now()
+
   # Broadcast Functions
 
   @doc """
@@ -78,20 +109,41 @@ defmodule AntColony.Events do
   * `ant_id` - The unique identifier of the ant
   * `old_pos` - The previous position {x, y}
   * `new_pos` - The new position {x, y}
+  * `opts` - Optional keyword list for metadata (e.g., `source: "sensor"`)
 
   ## Returns
 
   * `:ok` - Successfully broadcast
   * `{:error, reason}` - Broadcast failed
 
+  ## Metadata
+
+  The event includes an automatic timestamp. Any additional options
+  passed in `opts` are included in the metadata map.
+
   ## Examples
 
+      # Basic broadcast
       AntColony.Events.broadcast_ant_moved(AntColony.PubSub, "ant_1", {0, 0}, {1, 1})
+
+      # With custom metadata
+      AntColony.Events.broadcast_ant_moved(
+        AntColony.PubSub,
+        "ant_1",
+        {0, 0},
+        {1, 1},
+        source: "sensor",
+        reason: "foraging"
+      )
   """
-  @spec broadcast_ant_moved(atom(), ant_id(), position(), position()) :: :ok | {:error, term()}
-  def broadcast_ant_moved(pubsub_name, ant_id, old_pos, new_pos) do
-    event = {:ant_moved, ant_id, old_pos, new_pos}
-    Phoenix.PubSub.broadcast(pubsub_name, @topic_simulation, event)
+  @spec broadcast_ant_moved(atom(), ant_id(), position(), position(), keyword()) ::
+          :ok | {:error, term()}
+  def broadcast_ant_moved(pubsub_name, ant_id, old_pos, new_pos, opts \\ []) do
+    event_data = {:ant_moved, ant_id, old_pos, new_pos}
+    metadata = build_metadata(opts)
+    event = {:ant_moved, event_data, metadata}
+
+    do_broadcast(pubsub_name, @topic_simulation, event, :ant_moved)
   end
 
   @doc """
@@ -103,6 +155,7 @@ defmodule AntColony.Events do
   * `ant_id` - The unique identifier of the ant
   * `position` - The position where food was sensed {x, y}
   * `food_details` - A map containing food details (amount, type, etc.)
+  * `opts` - Optional keyword list for metadata
 
   ## Returns
 
@@ -113,10 +166,14 @@ defmodule AntColony.Events do
 
       AntColony.Events.broadcast_food_sensed(AntColony.PubSub, "ant_1", {5, 5}, %{amount: 10})
   """
-  @spec broadcast_food_sensed(atom(), ant_id(), position(), map()) :: :ok | {:error, term()}
-  def broadcast_food_sensed(pubsub_name, ant_id, position, food_details) do
-    event = {:food_sensed, ant_id, position, food_details}
-    Phoenix.PubSub.broadcast(pubsub_name, @topic_simulation, event)
+  @spec broadcast_food_sensed(atom(), ant_id(), position(), map(), keyword()) ::
+          :ok | {:error, term()}
+  def broadcast_food_sensed(pubsub_name, ant_id, position, food_details, opts \\ []) do
+    event_data = {:food_sensed, ant_id, position, food_details}
+    metadata = build_metadata(opts)
+    event = {:food_sensed, event_data, metadata}
+
+    do_broadcast(pubsub_name, @topic_simulation, event, :food_sensed)
   end
 
   @doc """
@@ -128,6 +185,7 @@ defmodule AntColony.Events do
   * `ant_id` - The unique identifier of the ant
   * `old_state` - The previous state atom
   * `new_state` - The new state atom
+  * `opts` - Optional keyword list for metadata
 
   ## Returns
 
@@ -143,11 +201,14 @@ defmodule AntColony.Events do
         :searching
       )
   """
-  @spec broadcast_ant_state_changed(atom(), ant_id(), ant_state(), ant_state()) ::
+  @spec broadcast_ant_state_changed(atom(), ant_id(), ant_state(), ant_state(), keyword()) ::
           :ok | {:error, term()}
-  def broadcast_ant_state_changed(pubsub_name, ant_id, old_state, new_state) do
-    event = {:ant_state_changed, ant_id, old_state, new_state}
-    Phoenix.PubSub.broadcast(pubsub_name, @topic_simulation, event)
+  def broadcast_ant_state_changed(pubsub_name, ant_id, old_state, new_state, opts \\ []) do
+    event_data = {:ant_state_changed, ant_id, old_state, new_state}
+    metadata = build_metadata(opts)
+    event = {:ant_state_changed, event_data, metadata}
+
+    do_broadcast(pubsub_name, @topic_simulation, event, :ant_state_changed)
   end
 
   @doc """
@@ -158,6 +219,7 @@ defmodule AntColony.Events do
   * `pubsub_name` - The name of the PubSub process
   * `ant_id` - The unique identifier of the ant
   * `position` - The initial position {x, y}
+  * `opts` - Optional keyword list for metadata
 
   ## Returns
 
@@ -168,10 +230,14 @@ defmodule AntColony.Events do
 
       AntColony.Events.broadcast_ant_registered(AntColony.PubSub, "ant_1", {0, 0})
   """
-  @spec broadcast_ant_registered(atom(), ant_id(), position()) :: :ok | {:error, term()}
-  def broadcast_ant_registered(pubsub_name, ant_id, position) do
-    event = {:ant_registered, ant_id, position}
-    Phoenix.PubSub.broadcast(pubsub_name, @topic_simulation, event)
+  @spec broadcast_ant_registered(atom(), ant_id(), position(), keyword()) ::
+          :ok | {:error, term()}
+  def broadcast_ant_registered(pubsub_name, ant_id, position, opts \\ []) do
+    event_data = {:ant_registered, ant_id, position}
+    metadata = build_metadata(opts)
+    event = {:ant_registered, event_data, metadata}
+
+    do_broadcast(pubsub_name, @topic_simulation, event, :ant_registered)
   end
 
   @doc """
@@ -181,6 +247,7 @@ defmodule AntColony.Events do
 
   * `pubsub_name` - The name of the PubSub process
   * `ant_id` - The unique identifier of the ant
+  * `opts` - Optional keyword list for metadata
 
   ## Returns
 
@@ -191,10 +258,44 @@ defmodule AntColony.Events do
 
       AntColony.Events.broadcast_ant_unregistered(AntColony.PubSub, "ant_1")
   """
-  @spec broadcast_ant_unregistered(atom(), ant_id()) :: :ok | {:error, term()}
-  def broadcast_ant_unregistered(pubsub_name, ant_id) do
-    event = {:ant_unregistered, ant_id}
-    Phoenix.PubSub.broadcast(pubsub_name, @topic_simulation, event)
+  @spec broadcast_ant_unregistered(atom(), ant_id(), keyword()) :: :ok | {:error, term()}
+  def broadcast_ant_unregistered(pubsub_name, ant_id, opts \\ []) do
+    event_data = {:ant_unregistered, ant_id}
+    metadata = build_metadata(opts)
+    event = {:ant_unregistered, event_data, metadata}
+
+    do_broadcast(pubsub_name, @topic_simulation, event, :ant_unregistered)
+  end
+
+  # Private Helper Functions
+
+  @doc false
+  @spec build_metadata(keyword()) :: %{timestamp: DateTime.t(), user_metadata: map() | nil}
+  defp build_metadata(opts) when is_list(opts) do
+    base_metadata = %{
+      timestamp: get_timestamp()
+    }
+
+    if opts == [] do
+      base_metadata
+    else
+      Map.put(base_metadata, :user_metadata, Map.new(opts))
+    end
+  end
+
+  @doc false
+  @spec do_broadcast(atom(), String.t(), term(), atom()) :: :ok | {:error, term()}
+  defp do_broadcast(pubsub_name, topic, event, event_type) do
+    try do
+      Phoenix.PubSub.broadcast(pubsub_name, topic, event)
+    rescue
+      e ->
+        Logger.error(
+          "Failed to broadcast #{event_type} event: #{Exception.message(e)}\n#{Exception.format_stacktrace()}"
+        )
+
+        {:error, {:broadcast_failed, Exception.message(e)}}
+    end
   end
 
   # Subscribe Functions
