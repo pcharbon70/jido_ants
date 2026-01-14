@@ -22,8 +22,20 @@ defmodule AntColony.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      # Jido Agent Framework (local v2 branch for development)
+      {:jido, path: "../jido"},
+
+      # PubSub for agent communication
+      {:phoenix_pubsub, "~> 2.1"},
+
+      # Documentation
+      {:ex_doc, "~> 0.30", only: :dev, runtime: false},
+
+      # Dialyzer for static analysis
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+
+      # Credo for code linting
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 end
