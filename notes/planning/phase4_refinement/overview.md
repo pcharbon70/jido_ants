@@ -2,11 +2,11 @@
 
 ## Description
 
-This document provides an overview of Phase 4: Testing, Debugging, and Refinement. This phase focuses on ensuring the quality, correctness, and performance of the ant colony simulation through comprehensive testing strategies, debugging tools, observability features, and performance optimization.
+This document provides an overview of Phase 4: Testing, Debugging, and Refinement. This phase focuses on ensuring the quality, correctness, and performance of the ant colony simulation through comprehensive testing strategies, debugging tools, observability features, and performance optimization. A significant emphasis is placed on testing the **generational machine learning** system - verifying that generations evolve correctly, KPIs are tracked accurately, and the breeding/evaluation system produces valid results.
 
 ## Goal
 
-Establish a robust testing and debugging infrastructure that ensures the simulation behaves correctly, performs efficiently, and can be easily diagnosed when issues arise. This phase runs concurrently with Phase 3 development, providing continuous validation and refinement.
+Establish a robust testing and debugging infrastructure that ensures the simulation behaves correctly, performs efficiently, and can be easily diagnosed when issues arise. This phase runs concurrently with Phase 3 development, providing continuous validation and refinement. Key goals include verifying that the generational ML system works correctly: generations transition properly, KPIs are calculated accurately, breeding produces valid parameters, and the colony's performance improves across generations.
 
 ## Architecture Overview
 
@@ -17,32 +17,57 @@ Phase 4 Testing & Debugging Infrastructure
 │   ├── Agent Tests (AntAgent behavior)
 │   ├── Plane Tests (environment management)
 │   ├── UI Tests (TermUI.Elm callbacks)
-│   └── Controller Tests (simulation control)
+│   ├── Controller Tests (simulation control)
+│   └── ColonyIntelligenceAgent Tests (NEW)
+│       ├── KPI calculation tests
+│       ├── Generation trigger logic tests
+│       ├── Evaluation/ranking tests
+│       └── Breeding algorithm tests
 │
 ├── Integration Testing
 │   ├── Agent ↔ Plane Interaction
 │   ├── Agent ↔ Agent Communication
 │   ├── Simulation ↔ UI Event Flow
 │   ├── End-to-End Simulation Scenarios
-│   └── ML Pipeline Integration
+│   ├── ML Pipeline Integration
+│   └── Generational Lifecycle Tests (NEW)
+│       ├── Generation transition E2E
+│       ├── Evaluation → Breeding → Spawning
+│       ├── KPI tracking across generations
+│       └── UI reflects generational changes
 │
 ├── Property-Based Testing
 │   ├── StreamData Generators
 │   ├── State Invariants
 │   ├── Action Properties
-│   └── Simulation Properties
+│   ├── Simulation Properties
+│   └── Generational Invariants (NEW)
+│       ├── Generation IDs strictly increasing
+│       ├── KPIs remain within valid ranges
+│       ├── Breeding preserves parameter constraints
+│       └── Agent generation_id consistency
 │
 ├── Observability
 │   ├── Structured Logging
 │   ├── Telemetry Events
 │   ├── Metrics Collection
-│   └── Tracing
+│   ├── Tracing
+│   └── Generation Events (NEW)
+│       ├── [:generation_started, generation_id]
+│       ├── [:generation_ended, generation_id, metrics]
+│       ├── [:kpi_updated, generation_id, kpi_name, value]
+│       └── [:breeding_completed, generation_id, child_params]
 │
 ├── Debugging Tools
 │   ├── UI State Inspector
 │   ├── Agent Inspector
 │   ├── Event Logger
-│   └── REPL Helpers
+│   ├── REPL Helpers
+│   └── Genetic Visualization (NEW)
+│       ├── Parameter distribution display
+│       ├── Family line tracking
+│       ├── Generation comparison view
+│       └── KPI graph across generations
 │
 └── Performance Profiling
     ├── Benchmarking
@@ -61,6 +86,8 @@ Phase 4 Testing & Debugging Infrastructure
 | Observability | Logging, telemetry, and metrics for insight |
 | Debugging Tools | Inspect and diagnose system state |
 | Performance Profiling | Identify and fix performance issues |
+| Generational Testing (NEW) | Verify generation lifecycle, KPI tracking, breeding |
+| Genetic Visualization (NEW) | Display parameter distributions and evolution |
 
 ## Cycles in This Phase
 
@@ -183,15 +210,21 @@ TermUI's direct-mode nature provides immediate visual feedback:
 5. **Telemetry**: Key metrics emitted ✅
 6. **Debugging**: Tools available for inspection ✅
 7. **Performance**: Acceptable performance benchmarks ✅
+8. **ColonyIntelligenceAgent Tests**: KPI calculation, trigger logic, evaluation, breeding ✅
+9. **Generational Lifecycle Tests**: Full generation transition E2E tested ✅
+10. **Generational Invariants**: Generation IDs, KPI ranges, parameter constraints ✅
+11. **Generation Events**: All generational events emitted and logged ✅
+12. **Genetic Visualization**: Parameter distributions and family lines visible ✅
 
 ## Dependencies on Previous Phases
 
 Phase 4 requires the following from previous phases:
 
 **From Phase 1:**
-- Basic AntAgent implementation
+- Basic AntAgent implementation with `generation_id` field
 - Plane GenServer with food sources
 - MoveAction and SenseFoodAction
+- ColonyIntelligenceAgent for generational management
 
 **From Phase 2:**
 - AntColony.UI with TermUI.Elm
@@ -202,6 +235,10 @@ Phase 4 requires the following from previous phases:
 - All Actions (Pheromone, Foraging, Communication, ML)
 - Complete agent state machine
 - Controller for simulation management
+- DataCollectorAgent for foraging data aggregation
+- TrainerAgent for Axon model training
+- Generation trigger logic and Next Generation Protocol
+- KPI tracking per generation
 
 ## Testing Tools and Libraries
 

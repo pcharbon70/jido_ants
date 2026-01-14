@@ -21,6 +21,7 @@ Implement the MoveAction for ant movement with event publishing. This enables an
 │  │  • agent.state.position - Current position                 │    │
 │  │  • agent.state.path_memory - Movement history              │    │
 │  │  • agent.state.id - Ant identifier                        │    │
+│  │  • agent.state.generation_id - Generation identifier      │    │
 │  │  • agent.state.current_state - FSM state                  │    │
 │  └────────────────────────────────────────────────────────────┘    │
 │                                                                      │
@@ -29,8 +30,8 @@ Implement the MoveAction for ant movement with event publishing. This enables an
 │  │  1. Update agent.state.position to new coordinates         │    │
 │  │  2. Append {old_pos, observations} to path_memory           │    │
 │  │  3. Call AntColony.Plane.update_ant_position/2             │    │
-│  │  4. Broadcast {:ant_moved, ant_id, old_pos, new_pos}       │    │
-│  │     via AntColony.Events.broadcast_ant_moved/4             │    │
+│  │  4. Broadcast {:ant_moved, ant_id, generation_id,          │    │
+│  │     old_pos, new_pos} via AntColony.Events.broadcast       │    │
 │  └────────────────────────────────────────────────────────────┘    │
 │                                                                      │
 │  Return:                                                            │

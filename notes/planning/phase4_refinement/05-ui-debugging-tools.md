@@ -17,7 +17,8 @@ UI Debugging Infrastructure
 │   ├── Agent State Viewer
 │   ├── Path Memory Visualization
 │   ├── Known Sources Display
-│   └── Agent Action History
+│   ├── Agent Action History
+│   └── Agent Generation Info (NEW)
 │
 ├── Event Logger
 │   ├── PubSub Event Capture
@@ -30,6 +31,12 @@ UI Debugging Infrastructure
 │   ├── Performance Metrics Display
 │   ├── Pheromone Heatmap Toggle
 │   └── Communication Lines Toggle
+│
+├── Genetic Visualization (NEW)
+│   ├── Parameter Distribution Display
+│   ├── Family Line Tracker
+│   ├── Generation Comparison View
+│   └── KPI Trend Graph
 │
 ├── REPL Helpers
 │   ├── IEx Helper Functions
@@ -52,6 +59,7 @@ UI Debugging Infrastructure
 | Agent Inspector | View detailed agent information |
 | Event Logger | Capture and display PubSub events |
 | Debug Mode UI | Overlay debugging information on canvas |
+| Genetic Visualization | Display parameter distributions and evolution (NEW) |
 | REPL Helpers | IEx functions for inspection |
 | External Tools | Integration with BEAM debugging tools |
 
@@ -137,56 +145,69 @@ Show comprehensive agent state.
 - [ ] 4.5.2.2.3 Display carrying status and amount
 - [ ] 4.5.2.2.4 Display path memory length and contents
 - [ ] 4.5.2.2.5 Display known food sources count
+- [ ] 4.5.2.2.6 Display generation_id (NEW)
+- [ ] 4.5.2.2.7 Display agent parameters (exploration_bias, etc.) (NEW)
 
-### 4.5.2.3 Visualize Path Memory
+### 4.5.2.3 Display Agent Generation Info (NEW)
+
+Show agent's generational context.
+
+- [ ] 4.5.2.3.1 Display agent's generation_id prominently
+- [ ] 4.5.2.3.2 Display parent generation_id if available
+- [ ] 4.5.2.3.3 Show inherited parameters with values
+- [ ] 4.5.2.3.4 Highlight parameter differences from generation mean
+- [ ] 4.5.2.3.5 Display agent's contribution to generation KPIs
+
+### 4.5.2.4 Visualize Path Memory
 
 Show the agent's path memory on the canvas.
 
-- [ ] 4.5.2.3.1 Add toggle for path visualization
-- [ ] 4.5.2.3.2 Draw path memory as connected line
-- [ ] 4.5.2.3.3 Use distinct color for selected agent
-- [ ] 4.5.2.3.4 Indicate direction with arrows
-- [ ] 4.5.2.3.5 Fade older path positions
+- [ ] 4.5.2.4.1 Add toggle for path visualization
+- [ ] 4.5.2.4.2 Draw path memory as connected line
+- [ ] 4.5.2.4.3 Use distinct color for selected agent
+- [ ] 4.5.2.4.4 Indicate direction with arrows
+- [ ] 4.5.2.4.5 Fade older path positions
 
-### 4.5.2.4 Display Known Sources
+### 4.5.2.5 Display Known Sources
 
 Show the agent's known food sources.
 
-- [ ] 4.5.2.4.1 Create known sources list panel
-- [ ] 4.5.2.4.2 Display position and last quantity
-- [ ] 4.5.2.4.3 Show last update time
-- [ ] 4.5.2.4.4 Highlight sources on canvas
-- [ ] 4.5.2.4.5 Connect agent to sources with lines
+- [ ] 4.5.2.5.1 Create known sources list panel
+- [ ] 4.5.2.5.2 Display position and last quantity
+- [ ] 4.5.2.5.3 Show last update time
+- [ ] 4.5.2.5.4 Highlight sources on canvas
+- [ ] 4.5.2.5.5 Connect agent to sources with lines
 
-### 4.5.2.5 Display Agent Action History
+### 4.5.2.6 Display Agent Action History
 
 Show recent actions executed by the agent.
 
-- [ ] 4.5.2.5.1 Add action history to agent state (limit: 20)
-- [ ] 4.5.2.5.2 Log each action with result
-- [ ] 4.5.2.5.3 Display action history panel
-- [ ] 4.5.2.5.4 Show action name and outcome
-- [ ] 4.5.2.5.5 Include timestamps
+- [ ] 4.5.2.6.1 Add action history to agent state (limit: 20)
+- [ ] 4.5.2.6.2 Log each action with result
+- [ ] 4.5.2.6.3 Display action history panel
+- [ ] 4.5.2.6.4 Show action name and outcome
+- [ ] 4.5.2.6.5 Include timestamps
 
-### 4.5.2.6 Implement Agent Selection
+### 4.5.2.7 Implement Agent Selection
 
 Allow selecting agents from the UI.
 
-- [ ] 4.5.2.6.1 Add key handler for agent selection (e.g., "s" then ID)
-- [ ] 4.5.2.6.2 Support clicking on ants (if mouse support available)
-- [ ] 4.5.2.6.3 Add next/previous agent navigation (n/N keys)
-- [ ] 4.5.2.6.4 Highlight selected ant on canvas
-- [ ] 4.5.2.6.5 Add clear selection command (ESC)
+- [ ] 4.5.2.7.1 Add key handler for agent selection (e.g., "s" then ID)
+- [ ] 4.5.2.7.2 Support clicking on ants (if mouse support available)
+- [ ] 4.5.2.7.3 Add next/previous agent navigation (n/N keys)
+- [ ] 4.5.2.7.4 Highlight selected ant on canvas
+- [ ] 4.5.2.7.5 Add clear selection command (ESC)
 
-### 4.5.2.7 Unit Tests for Agent Inspector
+### 4.5.2.8 Unit Tests for Agent Inspector
 
 Test the agent inspector functionality.
 
-- [ ] 4.5.2.7.1 Test agent detail panel shows correct data
-- [ ] 4.5.2.7.2 Test path visualization draws correctly
-- [ ] 4.5.2.7.3 Test known sources display
-- [ ] 4.5.2.7.4 Test action history preserves order
-- [ ] 4.5.2.7.5 Test agent selection state changes
+- [ ] 4.5.2.8.1 Test agent detail panel shows correct data
+- [ ] 4.5.2.8.2 Test path visualization draws correctly
+- [ ] 4.5.2.8.3 Test known sources display
+- [ ] 4.5.2.8.4 Test action history preserves order
+- [ ] 4.5.2.8.5 Test agent selection state changes
+- [ ] 4.5.2.8.6 Test generation info displays correctly (NEW)
 
 ---
 
@@ -342,132 +363,227 @@ Test the debug mode features.
 
 ---
 
-## 4.5.5 Create REPL Helpers
+## 4.5.5 Create Genetic Visualization (NEW)
 
-Create IEx helper functions for interactive debugging.
+Create visualization tools for generational evolution and parameter tracking.
 
-### 4.5.5.1 Create Helper Module
+### 4.5.5.1 Create Parameter Distribution Display
 
-Create a module of IEx helper functions.
+Visualize the distribution of agent parameters across the population.
 
-- [ ] 4.5.5.1.1 Create `lib/ant_colony/observability/iex_helpers.ex`
-- [ ] 4.5.5.1.2 Add `defmodule AntColony.Observability.IExHelpers`
-- [ ] 4.5.5.1.3 Add comprehensive `@moduledoc` with usage examples
+- [ ] 4.5.5.1.1 Create `lib/ant_colony/ui/genetic_viz.ex`
+- [ ] 4.5.5.1.2 Add `defmodule AntColony.UI.GeneticViz`
+- [ ] 4.5.5.1.3 Create histogram widget for each parameter
+- [ ] 4.5.5.1.4 Display exploration_bias distribution
+- [ ] 4.5.5.1.5 Display pheromone_sensitivity distribution
+- [ ] 4.5.5.1.6 Display communication_willingness distribution
+- [ ] 4.5.5.1.7 Display food_quality_threshold distribution
+- [ ] 4.5.5.1.8 Use ASCII bar charts for histograms
 
-### 4.5.5.2 Implement Agent Inspection Helpers
+### 4.5.5.2 Create Family Line Tracker
 
-Create functions to inspect agents.
+Track parameter inheritance across generations.
 
-- [ ] 4.5.5.2.1 Define `def inspect_agent(ant_id)` - returns agent state
-- [ ] 4.5.5.2.2 Define `def list_agents()` - returns all agent IDs
-- [ ] 4.5.5.2.3 Define `def find_agents_by_state(state)` - filter by state
-- [ ] 4.5.5.2.4 Define `def find_agents_at_position(pos)` - filter by position
-- [ ] 4.5.5.2.5 Define `def agent_action_history(ant_id)` - get action history
+- [ ] 4.5.5.2.1 Store parent-child relationships in state
+- [ ] 4.5.5.2.2 Create family tree view widget
+- [ ] 4.5.5.2.3 Display inheritance chain for selected agent
+- [ ] 4.5.5.2.4 Highlight parameter changes across generations
+- [ ] 4.5.5.2.5 Show crossover points in lineage
 
-### 4.5.5.3 Implement Plane Inspection Helpers
+### 4.5.5.3 Create Generation Comparison View
 
-Create functions to inspect the plane.
+Compare KPIs and parameters across generations.
 
-- [ ] 4.5.5.3.1 Define `def inspect_plane()` - returns plane state
-- [ ] 4.5.5.3.2 Define `def food_sources()` - returns all food sources
-- [ ] 4.5.5.3.3 Define `def pheromone_map()` - returns pheromone grid
-- [ ] 4.5.5.3.4 Define `def agents_at_position(pos)` - list agents at position
-- [ ] 4.5.5.3.5 Define `def plane_statistics()` - return plane stats
+- [ ] 4.5.5.3.1 Create side-by-side generation comparison widget
+- [ ] 4.5.5.3.2 Display KPIs for current vs previous generation
+- [ ] 4.5.5.3.3 Show parameter mean/median/std dev per generation
+- [ ] 4.5.5.3.4 Highlight improving vs regressing metrics
+- [ ] 4.5.5.3.5 Support selecting any two generations to compare
 
-### 4.5.5.4 Implement Event Query Helpers
+### 4.5.5.4 Create KPI Trend Graph
 
-Create functions to query events.
+Display KPI trends across all generations.
 
-- [ ] 4.5.5.4.1 Define `def recent_events(count \\ 20)` - get recent events
-- [ ] 4.5.5.4.2 Define `def events_for_agent(ant_id)` - get agent events
-- [ ] 4.5.5.4.3 Define `def subscribe_to_events()` - subscribe in IEx
-- [ ] 4.5.5.4.4 Define `def watch_agent(ant_id)` - print agent events
-- [ ] 4.5.5.4.5 Define `def event_counts()` - show event frequency
+- [ ] 4.5.5.4.1 Create sparkline/line chart widget
+- [ ] 4.5.5.4.2 Plot food_collection_rate over generations
+- [ ] 4.5.5.4.3 Plot trip_efficiency over generations
+- [ ] 4.5.5.4.4 Plot success_rate over generations
+- [ ] 4.5.5.4.5 Use ASCII characters for line graph
+- [ ] 4.5.5.4.6 Scale graph to fit available space
 
-### 4.5.5.5 Implement State Manipulation Helpers
+### 4.5.5.5 Add Genetic Visualization Commands
 
-Create functions to manipulate simulation state.
+Add keyboard commands for genetic visualization.
 
-- [ ] 4.5.5.5.1 Define `def pause_simulation()` - pause the simulation
-- [ ] 4.5.5.5.2 Define `def resume_simulation()` - resume the simulation
-- [ ] 4.5.5.5.3 Define `def set_speed_multiplier(n)` - adjust speed
-- [ ] 4.5.5.5.4 Define `def spawn_ant_at(pos)` - create ant at position
-- [ ] 4.5.5.5.5 Define `def add_food_at(pos, amount)` - add food
-- [ ] 4.5.5.5.6 Define `def kill_agent(ant_id)` - remove an agent
+- [ ] 4.5.5.5.1 Add `g` key to toggle parameter distribution panel
+- [ ] 4.5.5.5.2 Add `f` key to show family line for selected agent
+- [ ] 4.5.5.5.3 Add `k` key to toggle KPI trend graph
+- [ ] 4.5.5.5.4 Add `v` key to enter generation comparison mode
+- [ ] 4.5.5.5.5 Add `h` key to show generation history summary
 
-### 4.5.5.6 Import Helpers in IEx Session
+### 4.5.5.6 Integrate with ColonyIntelligenceAgent
 
-Make helpers available in `.iex.exs`.
+Fetch generation data from ColonyIntelligenceAgent.
 
-- [ ] 4.5.5.6.1 Create or update `.iex.exs` in project root
-- [ ] 4.5.5.6.2 Import `AntColony.Observability.IExHelpers`
-- [ ] 4.5.5.6.3 Add aliases for common functions
-- [ ] 4.5.5.6.4 Add custom prompt with simulation status
-- [ ] 4.5.5.6.5 Document usage in comments
+- [ ] 4.5.5.6.1 Query current generation parameters
+- [ ] 4.5.5.6.2 Query generation KPI history
+- [ ] 4.5.5.6.3 Query breeding records for lineage tracking
+- [ ] 4.5.5.6.4 Subscribe to generation transition events
+- [ ] 4.5.5.6.5 Update visualizations on generation change
 
-### 4.5.5.7 Unit Tests for REPL Helpers
+### 4.5.5.7 Unit Tests for Genetic Visualization
 
-Test the REPL helper functions.
+Test genetic visualization components.
 
-- [ ] 4.5.5.7.1 Test `inspect_agent/1` returns correct state
-- [ ] 4.5.5.7.2 Test `list_agents/0` returns all IDs
-- [ ] 4.5.5.7.3 Test `find_agents_by_state/1` filters correctly
-- [ ] 4.5.5.7.4 Test `inspect_plane/0` returns plane state
-- [ ] 4.5.5.7.5 Test `recent_events/1` limits count
-- [ ] 4.5.5.7.6 Test `pause_simulation/0` pauses simulation
-- [ ] 4.5.5.7.7 Test `spawn_ant_at/1` creates agent
+- [ ] 4.5.5.7.1 Test parameter distribution calculates correctly
+- [ ] 4.5.5.7.2 Test histogram renders within bounds
+- [ ] 4.5.5.7.3 Test family line tracker traces lineage
+- [ ] 4.5.5.7.4 Test generation comparison shows differences
+- [ ] 4.5.5.7.5 Test KPI trend graph scales properly
+- [ ] 4.5.5.7.6 Test visualizations update on generation change
 
 ---
 
-## 4.5.6 Integrate External Tools
+## 4.5.6 Create REPL Helpers
+
+Create IEx helper functions for interactive debugging.
+
+### 4.5.6.1 Create Helper Module
+
+Create a module of IEx helper functions.
+
+- [ ] 4.5.6.1.1 Create `lib/ant_colony/observability/iex_helpers.ex`
+- [ ] 4.5.6.1.2 Add `defmodule AntColony.Observability.IExHelpers`
+- [ ] 4.5.6.1.3 Add comprehensive `@moduledoc` with usage examples
+
+### 4.5.6.2 Implement Agent Inspection Helpers
+
+Create functions to inspect agents.
+
+- [ ] 4.5.6.2.1 Define `def inspect_agent(ant_id)` - returns agent state
+- [ ] 4.5.6.2.2 Define `def list_agents()` - returns all agent IDs
+- [ ] 4.5.6.2.3 Define `def find_agents_by_state(state)` - filter by state
+- [ ] 4.5.6.2.4 Define `def find_agents_at_position(pos)` - filter by position
+- [ ] 4.5.6.2.5 Define `def agent_action_history(ant_id)` - get action history
+
+### 4.5.6.3 Implement Plane Inspection Helpers
+
+Create functions to inspect the plane.
+
+- [ ] 4.5.6.3.1 Define `def inspect_plane()` - returns plane state
+- [ ] 4.5.6.3.2 Define `def food_sources()` - returns all food sources
+- [ ] 4.5.6.3.3 Define `def pheromone_map()` - returns pheromone grid
+- [ ] 4.5.6.3.4 Define `def agents_at_position(pos)` - list agents at position
+- [ ] 4.5.6.3.5 Define `def plane_statistics()` - return plane stats
+
+### 4.5.6.4 Implement Event Query Helpers
+
+Create functions to query events.
+
+- [ ] 4.5.6.4.1 Define `def recent_events(count \\ 20)` - get recent events
+- [ ] 4.5.6.4.2 Define `def events_for_agent(ant_id)` - get agent events
+- [ ] 4.5.6.4.3 Define `def subscribe_to_events()` - subscribe in IEx
+- [ ] 4.5.6.4.4 Define `def watch_agent(ant_id)` - print agent events
+- [ ] 4.5.6.4.5 Define `def event_counts()` - show event frequency
+
+### 4.5.6.5 Implement Generation Inspection Helpers (NEW)
+
+Create functions to inspect generation data.
+
+- [ ] 4.5.6.5.1 Define `def current_generation()` - returns current generation_id
+- [ ] 4.5.6.5.2 Define `def generation_kpis(generation_id \\ nil)` - returns KPIs
+- [ ] 4.5.6.5.3 Define `def generation_parameters(generation_id \\ nil)` - returns param distribution
+- [ ] 4.5.6.5.4 Define `def generation_history()` - returns all generations summary
+- [ ] 4.5.6.5.5 Define `def compare_generations(gen1, gen2)` - side-by-side comparison
+- [ ] 4.5.6.5.6 Define `def trigger_generation()` - manually trigger next generation
+
+### 4.5.6.6 Implement State Manipulation Helpers
+
+Create functions to manipulate simulation state.
+
+- [ ] 4.5.6.6.1 Define `def pause_simulation()` - pause the simulation
+- [ ] 4.5.6.6.2 Define `def resume_simulation()` - resume the simulation
+- [ ] 4.5.6.6.3 Define `def set_speed_multiplier(n)` - adjust speed
+- [ ] 4.5.6.6.4 Define `def spawn_ant_at(pos)` - create ant at position
+- [ ] 4.5.6.6.5 Define `def add_food_at(pos, amount)` - add food
+- [ ] 4.5.6.6.6 Define `def kill_agent(ant_id)` - remove an agent
+
+### 4.5.6.7 Import Helpers in IEx Session
+
+Make helpers available in `.iex.exs`.
+
+- [ ] 4.5.6.7.1 Create or update `.iex.exs` in project root
+- [ ] 4.5.6.7.2 Import `AntColony.Observability.IExHelpers`
+- [ ] 4.5.6.7.3 Add aliases for common functions
+- [ ] 4.5.6.7.4 Add custom prompt with simulation status (including generation_id)
+- [ ] 4.5.6.7.5 Document usage in comments
+
+### 4.5.6.8 Unit Tests for REPL Helpers
+
+Test the REPL helper functions.
+
+- [ ] 4.5.6.8.1 Test `inspect_agent/1` returns correct state
+- [ ] 4.5.6.8.2 Test `list_agents/0` returns all IDs
+- [ ] 4.5.6.8.3 Test `find_agents_by_state/1` filters correctly
+- [ ] 4.5.6.8.4 Test `inspect_plane/0` returns plane state
+- [ ] 4.5.6.8.5 Test `recent_events/1` limits count
+- [ ] 4.5.6.8.6 Test `pause_simulation/0` pauses simulation
+- [ ] 4.5.6.8.7 Test `spawn_ant_at/1` creates agent
+- [ ] 4.5.6.8.8 Test generation helpers return correct data (NEW)
+
+---
+
+## 4.5.7 Integrate External Tools
 
 Integrate with BEAM debugging and observability tools.
 
-### 4.5.6.1 Configure :debugger Integration
+### 4.5.7.1 Configure :debugger Integration
 
 Enable BEAM debugger for the simulation.
 
-- [ ] 4.5.6.1.1 Add :debugger configuration to `config/dev.exs`
-- [ ] 4.5.6.1.2 Add :int module configuration
-- [ ] 4.5.6.1.3 Create helper: `def start_debugger()`
-- [ ] 4.5.6.1.4 Create helper: `def debug_module(module)`
-- [ ] 4.5.6.1.5 Document debugging workflow
+- [ ] 4.5.7.1.1 Add :debugger configuration to `config/dev.exs`
+- [ ] 4.5.7.1.2 Add :int module configuration
+- [ ] 4.5.7.1.3 Create helper: `def start_debugger()`
+- [ ] 4.5.7.1.4 Create helper: `def debug_module(module)`
+- [ ] 4.5.7.1.5 Document debugging workflow
 
-### 4.5.6.2 Configure :observer Integration
+### 4.5.7.2 Configure :observer Integration
 
 Enable Erlang observer for the simulation.
 
-- [ ] 4.5.6.1.1 Add :wx configuration to `config/dev.exs`
-- [ ] 4.5.6.2.2 Create helper: `def start_observer()`
-- [ ] 4.5.6.2.3 Document observer usage for ant colony
-- [ ] 4.5.6.2.4 Create observer layout documentation
+- [ ] 4.5.7.2.1 Add :wx configuration to `config/dev.exs`
+- [ ] 4.5.7.2.2 Create helper: `def start_observer()`
+- [ ] 4.5.7.2.3 Document observer usage for ant colony
+- [ ] 4.5.7.2.4 Create observer layout documentation
+- [ ] 4.5.7.2.5 Document ColonyIntelligenceAgent inspection in observer (NEW)
 
-### 4.5.6.3 Integrate Recon
+### 4.5.7.3 Integrate Recon
 
 Add Recon for enhanced shell debugging.
 
-- [ ] 4.5.6.3.1 Add `{:recon, "~> 2.5"}` to `mix.exs` deps (dev only)
-- [ ] 4.5.6.3.2 Configure Recon in `.iex.exs`
-- [ ] 4.5.6.3.3 Add Recon helpers to IExHelpers
-- [ ] 4.5.6.3.4 Document Recon functions for ant colony
+- [ ] 4.5.7.3.1 Add `{:recon, "~> 2.5"}` to `mix.exs` deps (dev only)
+- [ ] 4.5.7.3.2 Configure Recon in `.iex.exs`
+- [ ] 4.5.7.3.3 Add Recon helpers to IExHelpers
+- [ ] 4.5.7.3.4 Document Recon functions for ant colony
 
-### 4.5.6.4 Create Debugging Guide
+### 4.5.7.4 Create Debugging Guide
 
 Document debugging workflows.
 
-- [ ] 4.5.6.4.1 Create `docs/debugging_guide.md`
-- [ ] 4.5.6.4.2 Document common debugging scenarios
-- [ ] 4.5.6.4.3 Document using IEx helpers
-- [ ] 4.5.6.4.4 Document using external tools
-- [ ] 4.5.6.4.5 Add troubleshooting section
+- [ ] 4.5.7.4.1 Create `docs/debugging_guide.md`
+- [ ] 4.5.7.4.2 Document common debugging scenarios
+- [ ] 4.5.7.4.3 Document using IEx helpers
+- [ ] 4.5.7.4.4 Document using external tools
+- [ ] 4.5.7.4.5 Add troubleshooting section
+- [ ] 4.5.7.4.6 Add generation debugging section (NEW)
 
-### 4.5.6.5 Unit Tests for External Tools Integration
+### 4.5.7.5 Unit Tests for External Tools Integration
 
 Test external tool helpers.
 
-- [ ] 4.5.6.5.1 Test `start_debugger/0` launches debugger
-- [ ] 4.5.6.5.2 Test `debug_module/1` interprets module
-- [ ] 4.5.6.5.3 Test `start_observer/0` launches observer
+- [ ] 4.5.7.5.1 Test `start_debugger/0` launches debugger
+- [ ] 4.5.7.5.2 Test `debug_module/1` interprets module
+- [ ] 4.5.7.5.3 Test `start_observer/0` launches observer
 
 ---
 
@@ -482,6 +598,7 @@ Test debugging UI integration with the simulation.
 - [ ] 4.5.1.3 Verify event logger captures all events
 - [ ] 4.5.1.4 Verify debug mode overlay shows accurate metrics
 - [ ] 4.5.1.5 Verify toggles work correctly
+- [ ] 4.5.1.6 Verify genetic visualizations update on generation change (NEW)
 
 ### 4.5.2 Interactive Debugging Tests
 
@@ -491,6 +608,7 @@ Test interactive debugging scenarios.
 - [ ] 4.5.2.2 Verify event filtering works
 - [ ] 4.5.2.3 Verify state replay navigation works
 - [ ] 4.5.2.4 Verify REPL helpers return correct data
+- [ ] 4.5.2.5 Verify generation inspection helpers work (NEW)
 
 ## Phase 4.5 Success Criteria
 
@@ -498,8 +616,9 @@ Test interactive debugging scenarios.
 2. **Agent Inspector**: Select and inspect agents in detail ✅
 3. **Event Logger**: Capture, filter, and export events ✅
 4. **Debug Mode UI**: Toggle debug overlays and visualizations ✅
-5. **REPL Helpers**: IEx functions for inspection and manipulation ✅
-6. **External Tools**: Integration with :debugger, :observer, Recon ✅
+5. **Genetic Visualization**: Parameter distributions and family lines visible ✅
+6. **REPL Helpers**: IEx functions for inspection and manipulation ✅
+7. **External Tools**: Integration with :debugger, :observer, Recon ✅
 
 ## Phase 4.5 Critical Files
 
@@ -507,11 +626,12 @@ Test interactive debugging scenarios.
 - `lib/ant_colony/ui/inspector.ex`
 - `lib/ant_colony/ui/agent_inspector.ex`
 - `lib/ant_colony/ui/event_logger.ex`
+- `lib/ant_colony/ui/genetic_viz.ex` (NEW)
 - `lib/ant_colony/observability/iex_helpers.ex`
 - `.iex.exs`
 
 **Modified Files:**
-- `lib/ant_colony/ui.ex` - Add debug mode, toggles
+- `lib/ant_colony/ui.ex` - Add debug mode, toggles, generation display
 - `config/dev.exs` - External tool configuration
 - `mix.exs` - Recon dependency (dev)
 
@@ -519,5 +639,6 @@ Test interactive debugging scenarios.
 - `test/ant_colony/ui/inspector_test.exs`
 - `test/ant_colony/ui/agent_inspector_test.exs`
 - `test/ant_colony/ui/event_logger_test.exs`
+- `test/ant_colony/ui/genetic_viz_test.exs` (NEW)
 - `test/ant_colony/observability/iex_helpers_test.exs`
 - `test/ant_colony/ui/debug_mode_integration_test.exs`

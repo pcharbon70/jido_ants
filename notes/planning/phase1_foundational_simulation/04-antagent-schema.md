@@ -13,6 +13,7 @@ Define the AntAgent schema using Jido.Agent framework. This establishes the core
 │  Agent Schema:                                                      │
 │  ┌────────────────────────────────────────────────────────────┐    │
 │  │  • id: String.t()                  - Unique identifier     │    │
+│  │  • generation_id: pos_integer()     - Generation identifier │    │
 │  │  • position: {x, y}                - Current coordinates   │    │
 │  │  • nest_position: {x, y}           - Known nest location   │    │
 │  │  • path_memory: [{pos, obs}]       - Visited positions     │    │
@@ -37,6 +38,7 @@ Define the AntAgent schema using Jido.Agent framework. This establishes the core
 │  │  • Directive-based side effects (Emit, Schedule, etc.)    │    │
 │  │  • Pure state transitions via cmd/2                       │    │
 │  │  • Runs under Jido.AgentServer (GenServer)                │    │
+│  │  • Includes generation_id in all performance reports       │    │
 │  └────────────────────────────────────────────────────────────┘    │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
@@ -99,12 +101,14 @@ Create a dedicated module for the agent's state structure.
 
 ### 1.4.2.2 Define Core Identity Fields
 
-Add fields identifying the ant.
+Add fields identifying the ant and its generation.
 
 - [ ] 1.4.2.2.1 Add `:id` field - unique string identifier, required
-- [ ] 1.4.2.2.2 Add `:position` field - `{x, y}` tuple, required
-- [ ] 1.4.2.2.3 Add `:nest_position` field - `{x, y}` tuple, required
-- [ ] 1.4.2.2.4 Add type specs for identity fields
+- [ ] 1.4.2.2.2 Add `:generation_id` field - positive integer, required (set by ColonyIntelligenceAgent)
+- [ ] 1.4.2.2.3 Add `:position` field - `{x, y}` tuple, required
+- [ ] 1.4.2.2.4 Add `:nest_position` field - `{x, y}` tuple, required
+- [ ] 1.4.2.2.5 Add type specs for identity fields
+- [ ] 1.4.2.2.6 Document that generation_id is used for KPI tracking and breeding
 
 ### 1.4.2.3 Define Movement/Memory Fields
 
@@ -226,8 +230,9 @@ Verify the agent state struct can be created.
 - [ ] 1.4.5.1.1 Create `test/ant_colony/agent/ant_test.exs`
 - [ ] 1.4.5.1.2 Add test: `test "creates state with default values"` - check all defaults
 - [ ] 1.4.5.1.3 Add test: `test "id field is required"` - missing id behavior
-- [ ] 1.4.5.1.4 Add test: `test "position field is required"` - missing position behavior
-- [ ] 1.4.5.1.5 Add test: `test "nest_position field is required"` - missing nest behavior
+- [ ] 1.4.5.1.4 Add test: `test "generation_id field is required"` - missing generation_id behavior
+- [ ] 1.4.5.1.5 Add test: `test "position field is required"` - missing position behavior
+- [ ] 1.4.5.1.6 Add test: `test "nest_position field is required"` - missing nest behavior
 
 ### 1.4.5.2 Test Field Values
 
@@ -332,7 +337,7 @@ Test agent interaction with the Plane.
 ## Phase 1.4 Success Criteria
 
 1. **Agent Module**: Jido.Agent module compiles ✅
-2. **State Schema**: All fields defined with types ✅
+2. **State Schema**: All fields defined with types (includes generation_id) ✅
 3. **FSM States**: Initial state configured ✅
 4. **Type Specs**: Complete type specifications ✅
 5. **Defaults**: All defaults correctly set ✅

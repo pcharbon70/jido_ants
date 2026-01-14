@@ -1,6 +1,6 @@
 # Phase 3.5: UI Controls and Polish
 
-Implement user controls for interacting with the simulation and polish the visual presentation. This cycle adds pause/resume, speed adjustment, enhanced status displays, confirmation dialogs, and overall visual refinements.
+Implement user controls for interacting with the simulation and polish the visual presentation. This cycle adds pause/resume, speed adjustment, enhanced status displays, confirmation dialogs, manual generation trigger, and overall visual refinements.
 
 ## Architecture
 
@@ -10,6 +10,7 @@ UI Controls System
 │   ├── Pause/Resume (SPACE)
 │   ├── Speed Up (+) / Slow Down (-)
 │   ├── Quit with Confirmation (q)
+│   ├── Trigger Next Generation (G)
 │   ├── Toggle Pheromones (p)
 │   ├── Toggle Communications (c)
 │   └── Reset Simulation (Ctrl+R)
@@ -22,6 +23,7 @@ UI Controls System
 │
 ├── Enhanced UI Elements:
 │   ├── Status Bar (bottom)
+│   │   ├── Generation ID and progress
 │   │   ├── Ant count, carrying count
 │   │   ├── Total food collected
 │   │   ├── Simulation time
@@ -263,31 +265,70 @@ Show current speed multiplier.
 
 ---
 
-## 3.5.5 Implement Enhanced Status Bar
+## 3.5.5 Implement Manual Generation Trigger
+
+Add keyboard control for manual generation transition (debugging).
+
+### 3.5.5.1 Handle G Key for Generation Trigger
+
+Process manual generation trigger keypress.
+
+- [ ] 3.5.5.1.1 Add update clause for `%Event.Key{key: "G"}` or `"g"`
+- [ ] 3.5.5.1.2 Call `ColonyIntelligenceAgent.spawn_next_generation()` via action dispatch
+- [ ] 3.5.5.1.3 Show feedback: "Triggering next generation..."
+- [ ] 3.5.5.1.4 Update UI state with `:generation_trigger_pending` flag
+- [ ] 3.5.5.1.5 Return `{:noreply, updated_state}`
+
+### 3.5.5.2 Display Generation Trigger Feedback
+
+Show user feedback for manual trigger.
+
+- [ ] 3.5.5.2.1 Add `:generation_trigger_pending` to UI state
+- [ ] 3.5.5.2.2 Add `:generation_trigger_message` to UI state
+- [ ] 3.5.5.2.3 When trigger pending:
+  - Display message: "Forcing generation transition..."
+  - Show for 2-3 seconds
+  - Use bright color (yellow/cyan)
+- [ ] 3.5.5.2.4 Clear pending flag when generation starts
+
+### 3.5.5.3 Handle Trigger Errors
+
+Gracefully handle trigger failures.
+
+- [ ] 3.5.5.3.1 Add error handling for trigger action
+- [ ] 3.5.5.3.2 On error, display: "Generation trigger failed: {reason}"
+- [ ] 3.5.5.3.3 Use red color for error message
+- [ ] 3.5.5.3.4 Clear error after display duration
+
+---
+
+## 3.5.6 Implement Enhanced Status Bar
 
 Create comprehensive status display.
 
-### 3.5.5.1 Design Status Bar Layout
+### 3.5.6.1 Design Status Bar Layout
 
 Plan status bar sections.
 
-- [ ] 3.5.5.1.1 Define sections left to right:
-  1. Ant counts (total, carrying)
-  2. Food collected
-  3. Simulation time
-  4. Speed
-  5. Pause state
-  6. FPS
-- [ ] 3.5.5.1.2 Plan separators: `" | "`
-- [ ] 3.5.5.1.3 Allocate minimum widths for each section
+- [ ] 3.5.6.1.1 Define sections left to right:
+  1. Generation ID and progress
+  2. Ant counts (total, carrying)
+  3. Food collected
+  4. Simulation time
+  5. Speed
+  6. Pause state
+  7. FPS
+- [ ] 3.5.6.1.2 Plan separators: `" | "`
+- [ ] 3.5.6.1.3 Allocate minimum widths for each section
 
-### 3.5.5.2 Implement Status Bar Widget
+### 3.5.6.2 Implement Status Bar Widget
 
 Create the status bar rendering.
 
-- [ ] 3.5.5.2.1 Define `defp status_bar(state)` function
-- [ ] 3.5.5.2.2 Build status string:
+- [ ] 3.5.6.2.1 Define `defp status_bar(state)` function
+- [ ] 3.5.6.2.2 Build status string:
   ```elixir
+  gen = "Gen: #{state.current_generation_id}(#{state.food_delivered_count}/#{state.generation_trigger_count})"
   ants = "Ants: #{total}(#{carrying})"
   food = "Food: #{total_collected}"
   time = format_time(state.simulation_time)
@@ -295,91 +336,101 @@ Create the status bar rendering.
   pause = if state.paused, do: "[PAUSED]", else: ""
   fps = "FPS: #{state.fps || "?"}"
   ```
-- [ ] 3.5.5.2.3 Combine with separators
-- [ ] 3.5.5.2.4 Return `TermUI.Widget.text(status, style)`
-- [ ] 3.5.5.2.5 Use background color for visibility
+- [ ] 3.5.6.2.3 Combine with separators
+- [ ] 3.5.6.2.4 Return `TermUI.Widget.text(status, style)`
+- [ ] 3.5.6.2.5 Use background color for visibility
 
-### 3.5.5.3 Add FPS Counter
+### 3.5.6.3 Add FPS Counter
 
 Track and display frame rate.
 
-- [ ] 3.5.5.3.1 Add `:last_frame_time` to UI state
-- [ ] 3.5.5.3.2 Add `:fps` to UI state
-- [ ] 3.5.5.3.3 In view/1, calculate FPS:
+- [ ] 3.5.6.3.1 Add `:last_frame_time` to UI state
+- [ ] 3.5.6.3.2 Add `:fps` to UI state
+- [ ] 3.5.6.3.3 In view/1, calculate FPS:
   - `now = System.monotonic_time(:millisecond)`
   - `delta = now - state.last_frame_time`
   - `fps = round(1000 / delta)`
-- [ ] 3.5.5.3.4 Update state with new FPS
-- [ ] 3.5.5.3.5 Display in status bar
+- [ ] 3.5.6.3.4 Update state with new FPS
+- [ ] 3.5.6.3.5 Display in status bar
 
-### 3.5.5.4 Add Simulation Time Display
+### 3.5.6.4 Add Simulation Time Display
 
 Format and display simulation time.
 
-- [ ] 3.5.5.4.1 Get simulation_time from Controller
-- [ ] 3.5.5.4.2 Format as MM:SS or HH:MM:SS
-- [ ] 3.5.5.4.3 Display in status bar
-- [ ] 3.5.5.4.4 Update periodically (not every frame)
+- [ ] 3.5.6.4.1 Get simulation_time from Controller
+- [ ] 3.5.6.4.2 Format as MM:SS or HH:MM:SS
+- [ ] 3.5.6.4.3 Display in status bar
+- [ ] 3.5.6.4.4 Update periodically (not every frame)
 
-### 3.5.5.5 Add ML Metrics Display
+### 3.5.6.5 Add Generation Info Display
+
+Show generation ID and progress.
+
+- [ ] 3.5.6.5.1 Add `:current_generation_id` to UI state
+- [ ] 3.5.6.5.2 Add `:food_delivered_count` to UI state
+- [ ] 3.5.6.5.3 Add `:generation_trigger_count` to UI state
+- [ ] 3.5.6.5.4 Display in status bar: `"Gen: #{gen_id}(#{count}/#{trigger})"`
+- [ ] 3.5.6.5.5 Update on generation events
+
+### 3.5.6.6 Add ML Metrics Display
 
 Show model training progress.
 
-- [ ] 3.5.5.5.1 Add to status bar if ML is enabled
-- [ ] 3.5.5.5.2 Display: `"ML: E#{epoch} L#{loss}"`
-- [ ] 3.5.5.5.3 Use abbreviated format for space
-- [ ] 3.5.5.5.4 Color-code based on loss (green=low, red=high)
+- [ ] 3.5.6.6.1 Add to status bar if ML is enabled
+- [ ] 3.5.6.6.2 Display: `"ML: E#{epoch} L#{loss}"`
+- [ ] 3.5.6.6.3 Use abbreviated format for space
+- [ ] 3.5.6.6.4 Color-code based on loss (green=low, red=high)
 
 ---
 
-## 3.5.6 Implement Quit Confirmation
+## 3.5.7 Implement Quit Confirmation
 
 Add dialog to prevent accidental exit.
 
-### 3.5.6.1 Add Confirm Dialog State
+### 3.5.7.1 Add Confirm Dialog State
 
 Track quit confirmation state.
 
-- [ ] 3.5.6.1.1 Add `:show_quit_confirm` to UI state (default: `false`)
-- [ ] 3.5.6.1.2 Add `:pending_quit_command` to store original quit intent
+- [ ] 3.5.7.1.1 Add `:show_quit_confirm` to UI state (default: `false`)
+- [ ] 3.5.7.1.2 Add `:pending_quit_command` to store original quit intent
 
-### 3.5.6.2 Handle Quit Key with Confirmation
+### 3.5.7.2 Handle Quit Key with Confirmation
 
 Process quit key with confirmation step.
 
-- [ ] 3.5.6.2.1 Modify update clause for `%Event.Key{key: "q"}`
-- [ ] 3.5.6.2.2 If not `show_quit_confirm`:
+- [ ] 3.5.7.2.1 Modify update clause for `%Event.Key{key: "q"}`
+- [ ] 3.5.7.2.2 If not `show_quit_confirm`:
   - Set `show_quit_confirm: true`
   - Return `{:noreply, updated_state}`
-- [ ] 3.5.6.2.3 If already showing confirmation:
+- [ ] 3.5.7.2.3 If already showing confirmation:
   - Return `{:noreply, state, [:quit]}`
 
-### 3.5.6.3 Handle Confirmation Keys
+### 3.5.7.3 Handle Confirmation Keys
 
 Process yes/no for quit.
 
-- [ ] 3.5.6.3.1 Add update for `%Event.Key{key: "y"}` when confirming
-- [ ] 3.5.6.3.2 Return `{:noreply, state, [:quit]}`
-- [ ] 3.5.6.3.3 Add update for `%Event.Key{key: "n"}` or `ESC`:
+- [ ] 3.5.7.3.1 Add update for `%Event.Key{key: "y"}` when confirming
+- [ ] 3.5.7.3.2 Return `{:noreply, state, [:quit]}`
+- [ ] 3.5.7.3.3 Add update for `%Event.Key{key: "n"}` or `ESC`:
   - Set `show_quit_confirm: false`
   - Return `{:noreply, updated_state}`
 
-### 3.5.6.4 Render Confirmation Dialog
+### 3.5.7.4 Render Confirmation Dialog
 
 Draw the quit confirmation dialog.
 
-- [ ] 3.5.6.4.1 In view/1, if `show_quit_confirm`:
+- [ ] 3.5.7.4.1 In view/1, if `show_quit_confirm`:
   - Create dialog using `TermUI.Widget.AlertDialog`
   - Title: "Quit?"
   - Message: "Are you sure you want to quit?"
   - Buttons: "[Y]es  [N]o"
   - Center on canvas
-- [ ] 3.5.6.4.2 Draw over other UI elements
-- [ ] 3.5.6.4.3 Use contrasting color scheme
+- [ ] 3.5.7.4.2 Draw over other UI elements
+- [ ] 3.5.7.4.3 Use contrasting color scheme
 
 ---
 
-## 3.5.7 Implement Visual Refinements
+## 3.5.8 Implement Visual Refinements
 
 Polish colors, characters, and layout.
 
@@ -430,18 +481,19 @@ Arrange UI elements for clarity.
 - [ ] 3.5.7.4.3 Add padding around canvas if terminal larger
 - [ ] 3.5.7.4.4 Ensure minimum size requirements (80x24)
 
-### 3.5.7.5 Add Help Screen
+### 3.5.8.5 Add Help Screen
 
 Display controls and legend.
 
-- [ ] 3.5.7.5.1 Add `:show_help` to UI state
-- [ ] 3.5.7.5.2 Toggle with `h` or `?` key
-- [ ] 3.5.7.5.3 Render help overlay:
+- [ ] 3.5.8.5.1 Add `:show_help` to UI state
+- [ ] 3.5.8.5.2 Toggle with `h` or `?` key
+- [ ] 3.5.8.5.3 Render help overlay:
   ```
   Controls:
     SPACE - Pause/Resume
     +/-  - Speed Up/Down
     q    - Quit (with confirmation)
+    G    - Trigger Next Generation (debug)
     p    - Toggle Pheromones
     c    - Toggle Communications
     g    - Toggle Grid
@@ -453,12 +505,12 @@ Display controls and legend.
     a - Searching ant
     A - Ant with food
   ```
-- [ ] 3.5.7.5.4 Center on canvas
-- [ ] 3.5.7.5.5 Dismiss on any key
+- [ ] 3.5.8.5.4 Center on canvas
+- [ ] 3.5.8.5.5 Dismiss on any key
 
 ---
 
-## 3.5.8 Add Optional Info Panel
+## 3.5.9 Add Optional Info Panel
 
 Create side panel for additional information.
 

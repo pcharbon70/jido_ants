@@ -11,22 +11,29 @@ Property-Based Testing with StreamData
 │   ├── ant_state_generator() -> AntAgent.t()
 │   ├── food_source_generator() -> FoodSource.t()
 │   ├── pheromone_generator() -> Pheromone.t()
-│   └── path_generator() -> [{x, y}]
+│   ├── path_generator() -> [{x, y}]
+│   └── generation_state_generator() -> GenerationState.t() (NEW)
 │
 ├── Invariants
 │   ├── Ant State Invariants
 │   │   ├── Position within bounds
 │   │   ├── Path memory includes current position
 │   │   ├── Energy non-negative
-│   │   └── Known sources have valid positions
+│   │   ├── Known sources have valid positions
+│   │   └── generation_id matches current generation (NEW)
 │   ├── Plane State Invariants
 │   │   ├── Food quantity non-negative
 │   │   ├── Pheromone levels 0-100
 │   │   ├── Nest position within bounds
 │   │   └── Registered ants have valid positions
-│   └── UI State Invariants
-│       ├── Width/height positive
-│       └── Positions consistent with state
+│   ├── UI State Invariants
+│   │   ├── Width/height positive
+│   │   └── Positions consistent with state
+│   └── Generational Invariants (NEW)
+│       ├── Generation IDs strictly increasing
+│       ├── KPIs remain within valid ranges
+│       ├── Breeding preserves parameter constraints
+│       └── Agent generation_id consistency
 │
 ├── Properties
 │   ├── Action Properties
@@ -37,9 +44,13 @@ Property-Based Testing with StreamData
 │   │   ├── Food conservation: total food constant or increasing
 │   │   ├── Ant conservation: ants only removed explicitly
 │   │   └── Position continuity: moves are adjacent
-│   └── ML Properties
-│       ├── Predictions in range [0, 1]
-│       └── Training decreases loss
+│   ├── ML Properties
+│   │   ├── Predictions in range [0, 1]
+│   │   └── Training decreases loss
+│   └── Generational Properties (NEW)
+│       ├── Generation transition produces valid state
+│       ├── KPIs are monotonic or bounded
+│       └── Breeding produces valid parameters
 │
 └── Test Execution
     ├── Check 100 generations
@@ -54,6 +65,7 @@ Property-Based Testing with StreamData
 | StreamData Generators | Produce random valid test data |
 | Invariant Tests | Verify state properties always hold |
 | Property Tests | Verify behavioral properties |
+| Generational Invariant Tests (NEW) | Verify generation properties always hold |
 | Shrinking | Find minimal failing examples |
 
 ---
@@ -162,6 +174,38 @@ Create generators for action parameters.
 - [ ] 4.3.2.7.3 Define `def communication_params_generator()`
 - [ ] 4.3.2.7.4 Return appropriate generators
 
+### 4.3.2.8 Generate Generation State (NEW)
+
+Create generator for valid generation states.
+
+- [ ] 4.3.2.8.1 Define `def generation_state_generator(opts \\ [])`
+- [ ] 4.3.2.8.2 Generate generation_id: `positive_integer()`
+- [ ] 4.3.2.8.3 Generate start_time: recent datetime
+- [ ] 4.3.2.8.4 Generate kpis: kpi_map_generator()
+- [ ] 4.3.2.8.5 Generate agent_params: parameter_map_generator()
+- [ ] 4.3.2.8.6 Return fixed struct with all generation fields
+
+### 4.3.2.9 Generate KPI Map (NEW)
+
+Create generator for KPI maps.
+
+- [ ] 4.3.2.9.1 Define `def kpi_map_generator(opts \\ [])`
+- [ ] 4.3.2.9.2 Generate food_collected: `non_negative_integer()`
+- [ ] 4.3.2.9.3 Generate trip_efficiency: `float(min: 0.0, max: 10.0)`
+- [ ] 4.3.2.9.4 Generate success_rate: `float(min: 0.0, max: 1.0)`
+- [ ] 4.3.2.9.5 Return map with KPI keys
+
+### 4.3.2.10 Generate Parameter Map (NEW)
+
+Create generator for agent parameter maps.
+
+- [ ] 4.3.2.10.1 Define `def parameter_map_generator(opts \\ [])`
+- [ ] 4.3.2.10.2 Generate exploration_bias: `float(min: 0.0, max: 1.0)`
+- [ ] 4.3.2.10.3 Generate pheromone_sensitivity: `float(min: 0.0, max: 2.0)`
+- [ ] 4.3.2.10.4 Generate communication_willingness: `float(min: 0.0, max: 1.0)`
+- [ ] 4.3.2.10.5 Generate food_quality_threshold: `integer(1, 5)`
+- [ ] 4.3.2.10.6 Return map with parameter keys
+
 ---
 
 ## 4.3.3 Ant State Invariant Tests
@@ -223,6 +267,17 @@ Verify known food sources have valid data.
   - Check: `Enum.all?(state.known_food_sources, fn fs -> is_valid_position(fs.position) end)`
 - [ ] 4.3.3.6.2 Test `property "known_food_sources have valid levels"`
   - Check: `Enum.all?(state.known_food_sources, fn fs -> fs.level in 1..5 end)`
+
+### 4.3.3.7 Test Generation ID Valid (NEW)
+
+Verify generation_id is valid and consistent.
+
+- [ ] 4.3.3.7.1 Test `property "generation_id is positive integer"`
+  - Generator: `ant_state_generator()`
+  - Check: `state.generation_id > 0`
+- [ ] 4.3.3.7.2 Test `property "generation_id matches colony current generation"`
+  - Generator: `ant_state_generator()` with current_generation context
+  - Check: `state.generation_id == current_generation_id`
 
 ---
 
@@ -452,24 +507,111 @@ Verify UI ant positions match ant state.
 
 ---
 
-## 4.3.9 Test Execution and Reporting
+## 4.3.9 Generational Invariant Tests (NEW)
+
+Verify generation-level properties always hold.
+
+### 4.3.9.1 Create Generational Property Tests
+
+Create test file for generational invariants.
+
+- [ ] 4.3.9.1.1 Create `test/ant_colony/generational_properties_test.exs`
+- [ ] 4.3.9.1.2 Add `use ExUnit.Case`
+- [ ] 4.3.9.1.3 Add `use StreamData`
+- [ ] 4.3.9.1.4 Add `import AntColony.Generators`
+
+### 4.3.9.2 Test Generation IDs Strictly Increasing
+
+Verify generation IDs always increase.
+
+- [ ] 4.3.9.2.1 Add `@tag :property` to module
+- [ ] 4.3.9.2.2 Test `property "generation_ids are strictly increasing over time"`
+  - Setup: track generation transitions
+  - Generator: `list_of(generation_transition_generator())`
+  - Check: each transition increments generation_id by 1
+- [ ] 4.3.9.2.3 Test `property "generation_id never decreases"`
+  - Generator: `generation_state_generator()`
+  - Check: `new_generation_id >= previous_generation_id`
+
+### 4.3.9.3 Test KPI Ranges Valid
+
+Verify KPIs remain within valid ranges.
+
+- [ ] 4.3.9.3.1 Test `property "food_collection_rate is non-negative"`
+  - Generator: `kpi_map_generator()`
+  - Check: `kpi.food_collection_rate >= 0`
+- [ ] 4.3.9.3.2 Test `property "trip_efficiency is bounded"`
+  - Generator: `kpi_map_generator()`
+  - Check: `kpi.trip_efficiency >= 0.0 and kpi.trip_efficiency <= 10.0`
+- [ ] 4.3.9.3.3 Test `property "success_rate is in [0, 1]"`
+  - Generator: `kpi_map_generator()`
+  - Check: `kpi.success_rate >= 0.0 and kpi.success_rate <= 1.0`
+
+### 4.3.9.4 Test Breeding Preserves Constraints
+
+Verify breeding produces valid parameters.
+
+- [ ] 4.3.9.4.1 Test `property "breeding produces valid exploration_bias"`
+  - Generator: `list_of(parameter_map_generator())` as parents
+  - Run breeding
+  - Check: all offspring `exploration_bias in 0.0..1.0`
+- [ ] 4.3.9.4.2 Test `property "breeding produces valid pheromone_sensitivity"`
+  - Generator: `list_of(parameter_map_generator())` as parents
+  - Run breeding
+  - Check: all offspring `pheromone_sensitivity in 0.0..2.0`
+- [ ] 4.3.9.4.3 Test `property "breeding produces valid food_quality_threshold"`
+  - Generator: `list_of(parameter_map_generator())` as parents
+  - Run breeding
+  - Check: all offspring `food_quality_threshold in 1..5`
+
+### 4.3.9.5 Test Agent Generation ID Consistency
+
+Verify all ants in a generation have matching generation_id.
+
+- [ ] 4.3.9.5.1 Test `property "all agents in generation have same generation_id"`
+  - Generator: `list_of(ant_state_generator())`
+  - Precondition: all ants spawned in same generation
+  - Check: `Enum.all?(ants, fn a -> a.generation_id == generation_id end)`
+- [ ] 4.3.9.5.2 Test `property "agent generation_id matches colony generation_id"`
+  - Setup: Application with ColonyIntelligenceAgent
+  - Generator: `ant_state_generator()`
+  - Check: `ant.generation_id == colony.current_generation_id`
+
+### 4.3.9.6 Test Generation Transition Properties
+
+Verify generation transitions produce valid state.
+
+- [ ] 4.3.9.6.1 Test `property "generation_transition preserves valid state"`
+  - Setup: valid generation state
+  - Run transition
+  - Check: new state has valid generation_id
+  - Check: new state has empty metrics (reset)
+- [ ] 4.3.9.6.2 Test `property "KPI history preserved across transitions"`
+  - Setup: generation with KPIs
+  - Run transition
+  - Check: previous generation KPIs in history
+  - Check: KPIs indexed by generation_id
+
+---
+
+## 4.3.10 Test Execution and Reporting
 
 Configure property test execution.
 
-### 4.3.9.1 Configure Test Tags
+### 4.3.10.1 Configure Test Tags
 
 Organize property tests.
 
-- [ ] 4.3.9.1.1 Add `@tag :property` to all property test modules
-- [ ] 4.3.9.1.2 Add `@tag :slow` to slow property tests
-- [ ] 4.3.9.1.3 Configure `mix test` to exclude `:slow` by default
+- [ ] 4.3.10.1.1 Add `@tag :property` to all property test modules
+- [ ] 4.3.10.1.2 Add `@tag :slow` to slow property tests
+- [ ] 4.3.10.1.3 Configure `mix test` to exclude `:slow` by default
 
-### 4.3.9.2 Add Seed Reporting
+### 4.3.10.2 Add Seed Reporting
 
 Report failing seeds for reproducibility.
 
-- [ ] 4.3.9.2.1 Configure `Application.put_env(:stream_data, :seed_on_failure, true)`
-- [ ] 4.3.9.2.2 Add task to re-run specific seed:
+- [ ] 4.3.10.2.1 Configure `Application.put_env(:stream_data, :seed_on_failure, true)`
+- [ ] 4.3.10.2.2 Add task to re-run specific seed:
   ```elixir
   defp property_seed(seed) do
     System.put_env("STREAM_DATA_SEED", seed)
@@ -479,19 +621,19 @@ Report failing seeds for reproducibility.
 
 ---
 
-## 4.3.10 Phase 4.3 Integration Tests
+## 4.3.11 Phase 4.3 Integration Tests
 
 End-to-end tests for property-based testing.
 
-### 4.3.10.1 Test Infrastructure Validation
+### 4.3.11.1 Test Infrastructure Validation
 
 Verify property test framework works.
 
-- [ ] 4.3.10.1.1 Create `test/phase4/property_tests_infrastructure_test.exs`
-- [ ] 4.3.10.1.2 Add test: `test "StreamData is available"`
-- [ ] 4.3.10.1.3 Add test: `test "all generators produce valid data"`
-- [ ] 4.3.10.1.4 Add test: `test "property tests run successfully"`
-- [ ] 4.3.10.1.5 Add test: `test "shrinking finds minimal counterexample"`
+- [ ] 4.3.11.1.1 Create `test/phase4/property_tests_infrastructure_test.exs`
+- [ ] 4.3.11.1.2 Add test: `test "StreamData is available"`
+- [ ] 4.3.11.1.3 Add test: `test "all generators produce valid data"`
+- [ ] 4.3.11.1.4 Add test: `test "property tests run successfully"`
+- [ ] 4.3.11.1.5 Add test: `test "shrinking finds minimal counterexample"`
 
 ---
 
@@ -504,7 +646,8 @@ Verify property test framework works.
 5. **Action Properties**: Action behaviors tested ✅
 6. **Simulation Properties**: System-level properties tested ✅
 7. **ML Properties**: Model properties tested ✅
-8. **Tests**: All property tests pass ✅
+8. **Generational Invariants**: Generation IDs, KPIs, breeding tested ✅
+9. **Tests**: All property tests pass ✅
 
 ## Phase 4.3 Critical Files
 
@@ -516,6 +659,7 @@ Verify property test framework works.
 - `test/ant_colony/simulation_properties_test.exs` - Simulation property tests
 - `test/ant_colony/ml/properties_test.exs` - ML property tests
 - `test/ant_colony/ui_properties_test.exs` - UI invariant tests
+- `test/ant_colony/generational_properties_test.exs` - Generational invariants (NEW)
 - `test/phase4/property_tests_infrastructure_test.exs` - Infrastructure tests
 
 **Modified Files:**

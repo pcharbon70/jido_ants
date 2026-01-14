@@ -2,11 +2,11 @@
 
 ## Description
 
-This document provides an overview of Phase 2: Initial UI Integration. This phase creates a terminal-based user interface using `term_ui` that visualizes the ant colony simulation in real-time.
+This document provides an overview of Phase 2: Initial UI Integration. This phase creates a terminal-based user interface using `term_ui` that visualizes the ant colony simulation in real-time, including generation tracking and KPI display.
 
 ## Goal
 
-Get a visual representation of the simulation running in the terminal. The UI acts as an observer to the Phase 1 simulation, receiving events via Phoenix.PubSub and rendering them on a Canvas widget.
+Get a visual representation of the simulation running in the terminal. The UI acts as an observer to the Phase 1 simulation, receiving events via Phoenix.PubSub and rendering them on a Canvas widget. The UI prominently displays the current generation ID and basic KPIs tracked by the ColonyIntelligenceAgent.
 
 ## Architecture Overview
 
@@ -17,11 +17,11 @@ Get a visual representation of the simulation running in the terminal. The UI ac
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │   ┌─────────────────┐  ┌─────────────────┐  ┌────────────────┐     │
-│   │ AntColony.PubSub│  │ AntColony.Plane │  │ AgentSupervisor│     │
-│   │                 │  │                 │  │                │     │
-│   │ Topic:          │  │ API:           │  │   AntAgents    │     │
-│   │ "ui_updates"    │  │ get_full_state │  │                │     │
-│   │                 │  │ _for_ui/0      │  │                │     │
+│   │ AntColony.PubSub│  │ AntColony.Plane │  │ColonyIntelligence│     │
+│   │                 │  │                 │  │     Agent       │     │
+│   │ Topic:          │  │ API:           │  │                │     │
+│   │ "ui_updates"    │  │ get_full_state │  │ generation_id  │     │
+│   │                 │  │ _for_ui/0      │  │ kpi_history    │     │
 │   └────────┬────────┘  └────────┬────────┘  └────────┬───────┘     │
 │            │                    │                     │            │
 │            └────────┬───────────┴─────────────────────┘            │
@@ -37,6 +37,12 @@ Get a visual representation of the simulation running in the terminal. The UI ac
 │            │ │  a  a   F   │ │                                 │
 │            │ │     F       │ │                                 │
 │            │ └─────────────┘ │                                 │
+│            │                 │                                 │
+│            │ ┌─────────────┐ │                                 │
+│            │ │ Status Bar  │ │                                 │
+│            │ │ Gen: 1      │ │                                 │
+│            │ │ Food: 5/50  │ │                                 │
+│            │ └─────────────┘ │                                 │
 │            └─────────────────┘                                 │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
@@ -48,8 +54,10 @@ Get a visual representation of the simulation running in the terminal. The UI ac
 |-----------|---------|
 | term_ui dependency | Terminal UI framework |
 | AntColony.Plane.get_full_state_for_ui/0 | API to fetch world state for UI |
+| AntColony.Agent.ColonyIntelligence | Manages generations and KPIs |
 | AntColony.UI | TermUI.Elm module for visualization |
 | Canvas Widget | Grid-based rendering of simulation |
+| Status Bar | Displays generation ID and KPIs |
 | Mix.Task ant_ui | Optional UI starter task |
 
 ## Phases in This Stage
@@ -69,10 +77,10 @@ Simulation ───────────────────────
                                                             │
                                                             ▼
 ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
-│  AntAgent    │  │    Plane      │  │   AntAgent    │
-│               │  │               │  │               │
-│ MoveAction   │  │ Food depleted │  │ SenseFood     │
-│     │         │  │     │         │  │     │         │
+│  AntAgent    │  │    Plane      │  │ ColonyIntel   │
+│               │  │               │  │   Agent       │
+│ MoveAction   │  │ Food depleted │  │               │
+│     │         │  │     │         │  │ Gen trigger   │
 │     ├─────────┴──┴─────┴─────────┴──┴─────┴─────────┤
 │     │                                                 │
 │     ▼                                                 │
@@ -88,7 +96,9 @@ Simulation ───────────────────────
 │                                                         │
 │                                             ┌─────────┴────────┐
 │                                             │ Update internal  │
-│                                             │ UI state        │
+│                                             │ UI state         │
+│                                             │ - generation_id  │
+│                                             │ - food_count     │
 │                                             └─────────────────┘
 │                                                         │
 │                                                         ▼
@@ -96,7 +106,8 @@ Simulation ───────────────────────
 │                                                         │
 │                                             ┌─────────┴────────┐
 │                                             │ Render Canvas    │
-│                                             │ with updates     │
+│                                             │ + Status Bar     │
+│                                             │ (Gen: 1, 5/50)  │
 │                                             └─────────────────┘
 ```
 
@@ -117,6 +128,9 @@ Handles incoming messages and updates UI state:
 |---------|--------|
 | `{:ant_moved, ant_id, old_pos, new_pos}` | Update ant_positions map |
 | `{:food_updated, pos, new_quantity}` | Update food_sources list |
+| `{:food_delivered, ant_id, generation_id, qty, time}` | Update food_count KPI |
+| `{:generation_started, generation_id}` | Update current_generation_id |
+| `{:generation_ended, generation_id, metrics}` | Update KPI display |
 | `%TermUI.Event.Key{key: "q"}` | Return `[:quit]` command |
 | `%TermUI.Event.Window{event: :resized}` | Handle resize (optional) |
 
@@ -126,6 +140,7 @@ Renders the UI state as a widget tree:
 - Draws nest at nest_location
 - Draws food sources at their positions
 - Draws ants at their positions
+- Creates status bar with generation ID and KPIs
 - Returns widget tree for TermUI runtime to render
 
 ## Visual Elements
@@ -138,15 +153,26 @@ Renders the UI state as a widget tree:
 | Ant (searching) | "a" | Red | Ant without food |
 | Ant (returning) | "A" | Red/Bold | Ant carrying food |
 
+## Status Bar
+
+The status bar displays generation information:
+
+| Field | Format | Description |
+|-------|--------|-------------|
+| Generation | "Gen: N" | Current generation ID |
+| Food Count | "Food: M/T" | Delivered / Trigger count |
+| Ant Count | "Ants: N" | Number of active ants |
+
 ## Success Criteria for Phase 2
 
 1. **term_ui Added**: Dependency installed and compiling
 2. **Plane UI API**: get_full_state_for_ui/0 returns world state
 3. **UI Module**: TermUI.Elm module created with init/update/view
 4. **Canvas Rendering**: Grid, nest, food, ants visible
-5. **Event Integration**: UI receives ant_moved and food_updated events
-6. **Interactive**: Can quit with 'q' key
-7. **Tests**: Unit and integration tests pass
+5. **Event Integration**: UI receives ant_moved, food_updated, and generation events
+6. **Status Bar**: Displays generation ID and KPIs (food count)
+7. **Interactive**: Can quit with 'q' key
+8. **Tests**: Unit and integration tests pass
 
 ## Dependencies on Phase 1
 
@@ -155,7 +181,8 @@ Phase 2 requires the following from Phase 1:
 - Plane GenServer with world state
 - AntAgent with MoveAction (publishes ant_moved)
 - AntAgent with SenseFoodAction (publishes food_sensed)
-- Event broadcasting via AntColony.Events
+- ColonyIntelligenceAgent (manages generation_id and KPIs)
+- Event broadcasting via AntColony.Events (generation lifecycle events)
 
 ## Next Phase
 

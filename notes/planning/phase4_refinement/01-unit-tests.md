@@ -22,13 +22,20 @@ Unit Test Coverage
 │   ├── Agent
 │   ├── Agent.StateMachine
 │   ├── Controller
-│   └── Pheromone
+│   ├── Pheromone
+│   └── ColonyIntelligenceAgent (NEW)
 │
 ├── ML Modules (test/ant_colony/ml/*_test.exs)
 │   ├── Model
 │   ├── Trainer
 │   ├── TrainingRecord
 │   └── Features
+│
+├── Generational Modules (test/ant_colony/generational/*_test.exs) (NEW)
+│   ├── DataCollectorAgent
+│   ├── TrainerAgent
+│   ├── Breeding
+│   └── GenerationSupervisor
 │
 └── UI (test/ant_colony/ui_test.exs)
     ├── init/1
@@ -42,6 +49,10 @@ Unit Test Coverage
 |-----------|---------|
 | Action Tests | Verify each Jido Action produces correct state transitions |
 | Module Tests | Verify Plane, Agent, and other core modules |
+| ColonyIntelligenceAgent Tests (NEW) | Verify KPI tracking, trigger logic, evaluation, breeding |
+| DataCollectorAgent Tests (NEW) | Verify foraging data aggregation |
+| TrainerAgent Tests (NEW) | Verify Axon model training per generation |
+| Breeding Tests (NEW) | Verify selection, crossover, mutation algorithms |
 | ML Tests | Verify machine learning components |
 | UI Tests | Verify TermUI.Elm callbacks |
 
@@ -310,6 +321,93 @@ Verify pheromone utilities work correctly.
 - [ ] 4.1.3.5.3 Test `test "within_radius? returns correct boolean"`
 - [ ] 4.1.3.5.4 Test `test "evap_rate applies correct evaporation"`
 
+### 4.1.3.6 Test ColonyIntelligenceAgent (NEW)
+
+Verify generational management and KPI tracking.
+
+- [ ] 4.1.3.6.1 Create `test/ant_colony/colony_intelligence_agent_test.exs`
+- [ ] 4.1.3.6.2 Test `test "init/1 starts with generation_id 1"`
+- [ ] 4.1.3.6.3 Test `test "current_generation_id returns correct generation"`
+- [ ] 4.1.3.6.4 Test `test "register_agent increments agent count"`
+- [ ] 4.1.3.6.5 Test `test "unregister_agent decrements agent count"`
+
+### 4.1.3.7 Test KPI Calculation (NEW)
+
+Verify KPI metrics are calculated correctly.
+
+- [ ] 4.1.3.7.1 Test `test "calculate_food_collection_rate returns correct value"`
+  - Setup: 100 food collected over 60 seconds
+  - Assert: rate ≈ 1.67 food/second
+- [ ] 4.1.3.7.2 Test `test "calculate_trip_efficiency returns correct value"`
+  - Setup: 50 trips, total distance 500
+  - Assert: efficiency = 0.1 food/unit
+- [ ] 4.1.3.7.3 Test `test "calculate_success_rate returns correct value"`
+  - Setup: 40 successful trips, 10 failed
+  - Assert: success rate = 80%
+- [ ] 4.1.3.7.4 Test `test "KPIs are reset on generation transition"`
+
+### 4.1.3.8 Test Generation Trigger Logic (NEW)
+
+Verify generation transition triggers work correctly.
+
+- [ ] 4.1.3.8.1 Test `test "trigger_after_food_delivered fires at threshold"`
+  - Setup: threshold = 50, count = 49
+  - Send food_delivered event
+  - Assert: generation triggered
+- [ ] 4.1.3.8.2 Test `test "plateau_detection_fires_after_stagnation"`
+  - Setup: KPIs unchanged for N deliveries
+  - Assert: plateau detected
+- [ ] 4.1.3.8.3 Test `test "manual_trigger_fires_generation_transition"`
+  - Call `trigger_generation()`
+  - Assert: generation_id incremented
+
+### 4.1.3.9 Test Evaluation and Ranking (NEW)
+
+Verify agent evaluation produces valid rankings.
+
+- [ ] 4.1.3.9.1 Test `test "evaluate_agents returns ranked list"`
+  - Setup: agents with varying performance
+  - Call `evaluate_agents()`
+  - Assert: list sorted by performance descending
+- [ ] 4.1.3.9.2 Test `test "identify_fittest_returns_top_percentage"`
+  - Setup: 100 agents, top 20%
+  - Call `identify_fittest(0.2)`
+  - Assert: returns 20 best agents
+
+### 4.1.3.10 Test Breeding Algorithms (NEW)
+
+Verify selection, crossover, and mutation produce valid parameters.
+
+- [ ] 4.1.3.10.1 Test `test "selection chooses top performers"`
+  - Setup: ranked agents
+  - Call `select_parents(ranked, count)`
+  - Assert: only top performers selected
+- [ ] 4.1.3.10.2 Test `test "crossover_combines_parent_parameters"`
+  - Setup: two parent parameter maps
+  - Call `crossover(parent1, parent2)`
+  - Assert: child has mix of both parameters
+- [ ] 4.1.3.10.3 Test `test "mutation_introduces_random_variations"`
+  - Setup: parameter map
+  - Call `mutate(params, rate)`
+  - Assert: some parameters changed slightly
+- [ ] 4.1.3.10.4 Test `test "breeding_preserves_parameter_constraints"`
+  - Setup: parameters with min/max constraints
+  - Call `breed(parents)`
+  - Assert: all children within valid ranges
+
+### 4.1.3.11 Test Next Generation Protocol (NEW)
+
+Verify the full generation lifecycle.
+
+- [ ] 4.1.3.11.1 Test `test "next_generation_protocol_runs_full_cycle"`
+  - Setup: agents with performance data
+  - Call `next_generation()`
+  - Assert: evaluation → breeding → spawning → reset
+- [ ] 4.1.3.11.2 Test `test "spawning_creates_new_generation_with_evolved_params"`
+  - Setup: evolved parameters
+  - Call `spawn_new_generation(params)`
+  - Assert: new agents have evolved params, generation_id incremented
+
 ---
 
 ## 4.1.4 Unit Tests for ML Components
@@ -358,125 +456,180 @@ Verify feature engineering.
 
 ---
 
-## 4.1.5 Unit Tests for UI Components
+## 4.1.5 Unit Tests for Generational Modules (NEW)
 
-Test TermUI.Elm callbacks.
+Test generational ML components.
 
-### 4.1.5.1 Test UI Module
+### 4.1.5.1 Test DataCollectorAgent (NEW)
 
-Verify UI Elm architecture works correctly.
+Verify foraging data aggregation.
 
-- [ ] 4.1.5.1.1 Create `test/ant_colony/ui_test.exs`
-- [ ] 4.1.5.1.2 Describe "UI context setup"
-- [ ] 4.1.5.1.3 Test `test "init/1 subscribes to ui_updates topic"`
-- [ ] 4.1.5.1.4 Test `test "init/1 fetches initial state from Plane"`
-- [ ] 4.1.5.1.5 Test `test "init/1 builds correct initial UI state"`
-- [ ] 4.1.5.1.6 Test `test "update/2 handles ant_moved event"`
-- [ ] 4.1.5.1.7 Test `test "update/2 handles food_updated event"`
-- [ ] 4.1.5.1.8 Test `test "update/2 handles pheromone_updated event"`
-- [ ] 4.1.5.1.9 Test `test "update/2 handles communication events"`
-- [ ] 4.1.5.1.10 Test `test "update/2 handles model_updated event"`
-- [ ] 4.1.5.1.11 Test `test "update/2 handles pause/resume events"`
-- [ ] 4.1.5.1.12 Test `test "update/2 handles quit key"`
-- [ ] 4.1.5.1.13 Test `test "update/2 handles quit confirmation"`
-- [ ] 4.1.5.1.14 Test `test "view/1 returns valid Canvas widget"`
-- [ ] 4.1.5.1.15 Test `test "view/1 draws nest at correct position"`
-- [ ] 4.1.5.1.16 Test `test "view/1 draws food sources correctly"`
-- [ ] 4.1.5.1.17 Test `test "view/1 draws ants at positions"`
-- [ ] 4.1.5.1.18 Test `test "view/1 handles empty state"`
+- [ ] 4.1.5.1.1 Create `test/ant_colony/generational/data_collector_agent_test.exs`
+- [ ] 4.1.5.1.2 Test `test "init/1 starts with empty data buffer"`
+- [ ] 4.1.5.1.3 Test `test "collect_foraging_data stores trip data"`
+- [ ] 4.1.5.1.4 Test `test "collect_foraging_data links to generation_id"`
+- [ ] 4.1.5.1.5 Test `test "get_aggregated_data returns summary statistics"`
+- [ ] 4.1.5.1.6 Test `test "clear_generation_data removes data for generation"`
+- [ ] 4.1.5.1.7 Test `test "data buffer respects max_samples limit"`
+
+### 4.1.5.2 Test TrainerAgent (NEW)
+
+Verify Axon model training per generation.
+
+- [ ] 4.1.5.2.1 Create `test/ant_colony/generational/trainer_agent_test.exs`
+- [ ] 4.1.5.2.2 Test `test "init/1 starts with initial model"`
+- [ ] 4.1.5.2.3 Test `test "train_generation creates new model version"`
+- [ ] 4.1.5.2.4 Test `test "train_generation emits training_complete event"`
+- [ ] 4.1.5.2.5 Test `test "get_model_for_generation returns correct model"`
+- [ ] 4.1.5.2.6 Test `test "training preserves model lineage"`
+- [ ] 4.1.5.2.7 Test `test "training handles insufficient data gracefully"`
+
+### 4.1.5.3 Test Breeding Module (NEW)
+
+Verify selection, crossover, and mutation algorithms.
+
+- [ ] 4.1.5.3.1 Create `test/ant_colony/generational/breeding_test.exs`
+- [ ] 4.1.5.3.2 Test `test "select_tournament returns winners"`
+- [ ] 4.1.5.3.3 Test `test "select_roulette selects by fitness probability"`
+- [ ] 4.1.5.3.4 Test `test "crossover_single_point combines parents"`
+- [ ] 4.1.5.3.5 Test `test "crossover_uniform mixes parameters"`
+- [ ] 4.1.5.3.6 Test `test "mutate_gaussian adds random noise"`
+- [ ] 4.1.5.3.7 Test `test "mutate_uniform randomizes parameters"`
+- [ ] 4.1.5.3.8 Test `test "breed_cycle produces valid offspring"`
+- [ ] 4.1.5.3.9 Test `test "offspring_respect_parameter_bounds"`
+
+### 4.1.5.4 Test GenerationSupervisor (NEW)
+
+Verify generation lifecycle supervision.
+
+- [ ] 4.1.5.4.1 Create `test/ant_colony/generational/generation_supervisor_test.exs`
+- [ ] 4.1.5.4.2 Test `test "init/1 starts initial generation"`
+- [ ] 4.1.5.4.3 Test `test "advance_generation triggers full lifecycle"`
+- [ ] 4.1.5.4.4 Test `test "handle_info handles generation trigger"`
+- [ ] 4.1.5.4.5 Test `test "spawn_generation creates new agents"`
+- [ ] 4.1.5.4.6 Test `test "terminate_generation shuts down agents cleanly"`
 
 ---
 
-## 4.1.6 Test Mocks and Fixtures
+## 4.1.6 Unit Tests for UI Components
+
+Test TermUI.Elm callbacks.
+
+### 4.1.6.1 Test UI Module
+
+Verify UI Elm architecture works correctly.
+
+- [ ] 4.1.6.1.1 Create `test/ant_colony/ui_test.exs`
+- [ ] 4.1.6.1.2 Describe "UI context setup"
+- [ ] 4.1.6.1.3 Test `test "init/1 subscribes to ui_updates topic"`
+- [ ] 4.1.6.1.4 Test `test "init/1 fetches initial state from Plane"`
+- [ ] 4.1.6.1.5 Test `test "init/1 builds correct initial UI state"`
+- [ ] 4.1.6.1.6 Test `test "update/2 handles ant_moved event"`
+- [ ] 4.1.6.1.7 Test `test "update/2 handles food_updated event"`
+- [ ] 4.1.6.1.8 Test `test "update/2 handles pheromone_updated event"`
+- [ ] 4.1.6.1.9 Test `test "update/2 handles communication events"`
+- [ ] 4.1.6.1.10 Test `test "update/2 handles model_updated event"`
+- [ ] 4.1.6.1.11 Test `test "update/2 handles pause/resume events"`
+- [ ] 4.1.6.1.12 Test `test "update/2 handles quit key"`
+- [ ] 4.1.6.1.13 Test `test "update/2 handles quit confirmation"`
+- [ ] 4.1.6.1.14 Test `test "view/1 returns valid Canvas widget"`
+- [ ] 4.1.6.1.15 Test `test "view/1 draws nest at correct position"`
+- [ ] 4.1.6.1.16 Test `test "view/1 draws food sources correctly"`
+- [ ] 4.1.6.1.17 Test `test "view/1 draws ants at positions"`
+- [ ] 4.1.6.1.18 Test `test "view/1 handles empty state"`
+
+---
+
+## 4.1.7 Test Mocks and Fixtures
 
 Create test doubles for external dependencies.
 
-### 4.1.6.1 Create Plane Mock
+### 4.1.7.1 Create Plane Mock
 
 Mock Plane GenServer for action tests.
 
-- [ ] 4.1.6.1.1 Create `test/mocks/plane_mock.ex`
-- [ ] 4.1.6.1.2 Define `def start_link()` for mock
-- [ ] 4.1.6.1.3 Implement mock responses for:
+- [ ] 4.1.7.1.1 Create `test/mocks/plane_mock.ex`
+- [ ] 4.1.7.1.2 Define `def start_link()` for mock
+- [ ] 4.1.7.1.3 Implement mock responses for:
   - `:get_position`
   - `:pick_up_food`
   - `:lay_pheromone`
   - `:get_pheromone_levels`
-- [ ] 4.1.6.1.4 Store calls in agent process for assertion
+- [ ] 4.1.7.1.4 Store calls in agent process for assertion
 
-### 4.1.6.2 Create PubSub Mock
+### 4.1.7.2 Create PubSub Mock
 
 Mock Phoenix.PubSub for isolation.
 
-- [ ] 4.1.6.2.1 Create `test/mocks/pubsub_mock.ex`
-- [ ] 4.1.6.2.2 Track published events
-- [ ] 4.1.6.2.3 Define `def get_published_events()` helper
-- [ ] 4.1.6.2.4 Define `def clear_published_events()` helper
+- [ ] 4.1.7.2.1 Create `test/mocks/pubsub_mock.ex`
+- [ ] 4.1.7.2.2 Track published events
+- [ ] 4.1.7.2.3 Define `def get_published_events()` helper
+- [ ] 4.1.7.2.4 Define `def clear_published_events()` helper
 
-### 4.1.6.3 Create ML Mock
+### 4.1.7.3 Create ML Mock
 
 Mock ML trainer for tests.
 
-- [ ] 4.1.6.3.1 Create `test/mocks/ml_mock.ex`
-- [ ] 4.1.6.3.2 Mock `predict/1` to return fixed scores
-- [ ] 4.1.6.3.3 Mock `add_training_data/1`
-- [ ] 4.1.6.3.4 Allow configuration via process dictionary
+- [ ] 4.1.7.3.1 Create `test/mocks/ml_mock.ex`
+- [ ] 4.1.7.3.2 Mock `predict/1` to return fixed scores
+- [ ] 4.1.7.3.3 Mock `add_training_data/1`
+- [ ] 4.1.7.3.4 Allow configuration via process dictionary
 
 ---
 
-## 4.1.7 Test Configuration
+## 4.1.8 Test Configuration
 
 Configure test environment and settings.
 
-### 4.1.7.1 Configure Test Environment
+### 4.1.8.1 Configure Test Environment
 
 Set up config for test environment.
 
-- [ ] 4.1.7.1.1 Open `config/test.exs`
-- [ ] 4.1.7.1.2 Configure `config :ant_colony, :enable_ui, false`
-- [ ] 4.1.7.1.3 Configure `config :ant_colony, :log_level, :warn`
-- [ ] 4.1.7.1.4 Configure `config :ant_colony, :plane_dimensions, {10, 10}`
-- [ ] 4.1.7.1.5 Configure any test-specific timeouts
+- [ ] 4.1.8.1.1 Open `config/test.exs`
+- [ ] 4.1.8.1.2 Configure `config :ant_colony, :enable_ui, false`
+- [ ] 4.1.8.1.3 Configure `config :ant_colony, :log_level, :warn`
+- [ ] 4.1.8.1.4 Configure `config :ant_colony, :plane_dimensions, {10, 10}`
+- [ ] 4.1.8.1.5 Configure any test-specific timeouts
 
-### 4.1.7.2 Add Test Watcher Configuration
+### 4.1.8.2 Add Test Watcher Configuration
 
 Enable automatic test running during development.
 
-- [ ] 4.1.7.2.1 Create `test/test.watch.exs` if using mix_test.watch
-- [ ] 4.1.7.2.2 Configure watch patterns for lib/ and test/
-- [ ] 4.1.7.2.3 Configure clear command
+- [ ] 4.1.8.2.1 Create `test/test.watch.exs` if using mix_test.watch
+- [ ] 4.1.8.2.2 Configure watch patterns for lib/ and test/
+- [ ] 4.1.8.2.3 Configure clear command
 
 ---
 
-## 4.1.8 Phase 4.1 Integration Tests
+## 4.1.9 Phase 4.1 Integration Tests
 
 End-to-end tests for unit test infrastructure.
 
-### 4.1.8.1 Test Framework Validation
+### 4.1.9.1 Test Framework Validation
 
 Verify testing infrastructure works.
 
-- [ ] 4.1.8.1.1 Create `test/phase4/unit_tests_infrastructure_test.exs`
-- [ ] 4.1.8.1.2 Add test: `test "test helper loads successfully"`
-- [ ] 4.1.8.1.3 Add test: `test "data generators produce valid data"`
-- [ ] 4.1.8.1.4 Add test: `test "fixtures create expected state"`
-- [ ] 4.1.8.1.5 Add test: `test "mocks work correctly"`
+- [ ] 4.1.9.1.1 Create `test/phase4/unit_tests_infrastructure_test.exs`
+- [ ] 4.1.9.1.2 Add test: `test "test helper loads successfully"`
+- [ ] 4.1.9.1.3 Add test: `test "data generators produce valid data"`
+- [ ] 4.1.9.1.4 Add test: `test "fixtures create expected state"`
+- [ ] 4.1.9.1.5 Add test: `test "mocks work correctly"`
 
-### 4.1.8.2 Coverage Validation
+### 4.1.9.2 Coverage Validation
 
 Verify coverage meets targets.
 
-- [ ] 4.1.8.2.1 Add test: `test "unit tests achieve 80% coverage"`
-- [ ] 4.1.8.2.2 Add test: `test "all actions have unit tests"`
-- [ ] 4.1.8.2.3 Add test: `test "all core modules have unit tests"`
+- [ ] 4.1.9.2.1 Add test: `test "unit tests achieve 80% coverage"`
+- [ ] 4.1.9.2.2 Add test: `test "all actions have unit tests"`
+- [ ] 4.1.9.2.3 Add test: `test "all core modules have unit tests"`
 
-### 4.1.8.3 Test Execution Performance
+### 4.1.9.3 Test Execution Performance
 
 Verify tests run efficiently.
 
-- [ ] 4.1.8.3.1 Add test: `test "unit test suite completes in reasonable time"`
-- [ ] 4.1.8.3.2 Add test: `test "no tests have race conditions"`
-- [ ] 4.1.8.3.3 Add test: `test "tests are deterministic"`
+- [ ] 4.1.9.3.1 Add test: `test "unit test suite completes in reasonable time"`
+- [ ] 4.1.9.3.2 Add test: `test "no tests have race conditions"`
+- [ ] 4.1.9.3.3 Add test: `test "tests are deterministic"`
 
 ---
 
@@ -485,10 +638,14 @@ Verify tests run efficiently.
 1. **Test Infrastructure**: Helpers, fixtures, mocks in place ✅
 2. **Action Tests**: All actions have comprehensive unit tests ✅
 3. **Module Tests**: Core modules fully tested ✅
-4. **ML Tests**: ML components tested ✅
-5. **UI Tests**: UI callbacks tested ✅
-6. **Coverage**: 80%+ coverage achieved ✅
-7. **Performance**: Test suite runs in < 30 seconds ✅
+4. **ColonyIntelligenceAgent Tests**: KPI, trigger, evaluation, breeding ✅
+5. **DataCollectorAgent Tests**: Foraging data aggregation ✅
+6. **TrainerAgent Tests**: Model training per generation ✅
+7. **Breeding Tests**: Selection, crossover, mutation ✅
+8. **ML Tests**: ML components tested ✅
+9. **UI Tests**: UI callbacks tested ✅
+10. **Coverage**: 80%+ coverage achieved ✅
+11. **Performance**: Test suite runs in < 30 seconds ✅
 
 ## Phase 4.1 Critical Files
 
@@ -502,6 +659,8 @@ Verify tests run efficiently.
 - `test/mocks/ml_mock.ex` - ML mock
 - `test/ant_colony/actions/*_test.exs` - Action tests
 - `test/ant_colony/*_test.exs` - Module tests
+- `test/ant_colony/colony_intelligence_agent_test.exs` - ColonyIntelligence tests (NEW)
+- `test/ant_colony/generational/*_test.exs` - Generational modules tests (NEW)
 - `test/ant_colony/ml/*_test.exs` - ML tests
 - `test/ant_colony/ui_test.exs` - UI tests
 - `test/phase4/unit_tests_infrastructure_test.exs` - Infrastructure tests

@@ -23,13 +23,21 @@ Integration Test Scenarios
 │   ├── Food updated events update UI
 │   ├── Pheromone events update UI
 │   ├── Communication events update UI
-│   └── ML events update UI
+│   ├── ML events update UI
+│   └── Generation events update UI (NEW)
 │
 ├── End-to-End Scenarios
 │   ├── Single ant finds food
 │   ├── Multiple ants optimize foraging
 │   ├── Pheromone trail formation
-│   └── ML model improves efficiency
+│   ├── ML model improves efficiency
+│   └── Generational evolution improves KPIs (NEW)
+│
+├── Generational Lifecycle (NEW)
+│   ├── Full generation transition E2E
+│   ├── Evaluation → Breeding → Spawning
+│   ├── KPI tracking across generations
+│   └── UI reflects generational changes
 │
 └── Application Lifecycle
     ├── Startup sequence
@@ -45,6 +53,7 @@ Integration Test Scenarios
 | Agent-Agent Tests | Verify communication between ants |
 | Simulation-UI Tests | Verify event flow to UI |
 | E2E Scenarios | Verify complete simulation workflows |
+| Generational Lifecycle Tests (NEW) | Verify generation transition E2E |
 | Lifecycle Tests | Verify application startup/shutdown |
 
 ---
@@ -414,155 +423,297 @@ Verify ML system improves foraging.
   - Measure efficiency again
   - Assert improvement (within statistical variance)
 
+### 4.2.4.7 Test Generational Evolution (NEW)
+
+Verify colony improves across generations.
+
+- [ ] 4.2.4.7.1 Test `test "generation KPIs improve across generations"`
+  - Setup: initial generation baseline
+  - Run simulation for 3-5 generations
+  - Assert: later generations have better KPIs
+- [ ] 4.2.4.7.2 Test `test "breeding produces diverse offspring"`
+  - Setup: varied parent population
+  - Run breeding cycle
+  - Assert: offspring have parameter diversity
+- [ ] 4.2.4.7.3 Test `test "evolved_params_outperform_initial_params"`
+  - Setup: compare generation 1 vs generation 5
+  - Assert: generation 5 has better foraging efficiency
+
 ---
 
-## 4.2.5 Application Lifecycle Tests
+## 4.2.5 Generational Lifecycle Tests (NEW)
+
+Test the complete generation transition flow.
+
+### 4.2.5.1 Setup Generational Test Environment
+
+Configure test environment for generational tests.
+
+- [ ] 4.2.5.1.1 Create `test/ant_colony/integration/generational_lifecycle_test.exs`
+- [ ] 4.2.5.1.2 Add `use ExUnit.Case, async: false`
+- [ ] 4.2.5.1.3 Describe "Generational lifecycle context"
+- [ ] 4.2.5.1.4 Setup: start Application with ColonyIntelligenceAgent
+- [ ] 4.2.5.1.5 Cleanup: stop all processes
+
+### 4.2.5.2 Test Generation Transition E2E
+
+Verify full generation lifecycle works end-to-end.
+
+- [ ] 4.2.5.2.1 Test `test "generation transition completes all phases"`
+  - Setup: generation 1 with 50 food deliveries
+  - Trigger generation transition
+  - Assert: evaluation phase completes
+  - Assert: breeding phase produces valid offspring
+  - Assert: spawning phase creates new generation 2
+  - Assert: reset phase clears generation 1 metrics
+- [ ] 4.2.5.2.2 Test `test "generation_id increments after transition"`
+  - Setup: generation 1 active
+  - Trigger transition
+  - Assert: current_generation_id = 2
+  - Trigger transition again
+  - Assert: current_generation_id = 3
+
+### 4.2.5.3 Test Evaluation Phase
+
+Verify evaluation produces valid rankings.
+
+- [ ] 4.2.5.3.1 Test `test "evaluation ranks agents by performance"`
+  - Setup: agents with varying performance
+  - Run evaluation
+  - Assert: ranked list returned
+  - Assert: highest food delivered ranked first
+- [ ] 4.2.5.3.2 Test `test "evaluation_identifies_fittest_strategies"`
+  - Setup: diverse agent behaviors
+  - Run evaluation
+  - Assert: top performers identified
+  - Assert: parameters extracted correctly
+
+### 4.2.5.4 Test Breeding Phase
+
+Verify breeding produces valid offspring parameters.
+
+- [ ] 4.2.5.4.1 Test `test "breeding combines parent parameters"`
+  - Setup: fittest agents identified
+  - Run breeding
+  - Assert: offspring parameters mix parents
+  - Assert: mutation introduces variation
+- [ ] 4.2.5.4.2 Test `test "breeding respects parameter constraints"`
+  - Setup: parents with valid parameters
+  - Run breeding
+  - Assert: all offspring within valid ranges
+- [ ] 4.2.5.4.3 Test `test "breeding maintains_population_size"`
+  - Setup: N parents, target population M
+  - Run breeding
+  - Assert: M offspring produced
+
+### 4.2.5.5 Test Spawning Phase
+
+Verify new generation agents spawn correctly.
+
+- [ ] 4.2.5.5.1 Test `test "spawning creates agents with evolved_params"`
+  - Setup: evolved parameters from breeding
+  - Run spawning
+  - Assert: new agents have evolved parameters
+  - Assert: generation_id incremented
+- [ ] 4.2.5.5.2 Test `test "spawning terminates_previous_agents"`
+  - Setup: generation 1 agents
+  - Run spawning for generation 2
+  - Assert: generation 1 agents stopped
+  - Assert: only generation 2 agents running
+
+### 4.2.5.6 Test Reset Phase
+
+Verify generation metrics reset correctly.
+
+- [ ] 4.2.5.6.1 Test `test "reset clears generation metrics"`
+  - Setup: generation with accumulated KPIs
+  - Run reset
+  - Assert: food_delivered_count = 0
+  - Assert: trip metrics cleared
+- [ ] 4.2.5.6.2 Test `test "reset initializes_new_generation_tracking"`
+  - Setup: after reset
+  - Assert: KPI tracking active
+  - Assert: new events recorded correctly
+
+### 4.2.5.7 Test KPI Tracking Across Generations
+
+Verify KPIs tracked and compared across generations.
+
+- [ ] 4.2.5.7.1 Test `test "KPIs tracked per generation"`
+  - Setup: run 3 generations
+  - Assert: each generation has separate KPI record
+- [ ] 4.2.5.7.2 Test `test "historical KPIs accessible"`
+  - Query: generation 1 KPIs
+  - Assert: historical data returned
+  - Query: generation 2 KPIs
+  - Assert: different data returned
+
+### 4.2.5.8 Test UI Reflects Generational Changes
+
+Verify UI updates for generation events.
+
+- [ ] 4.2.5.8.1 Test `test "UI displays current generation_id"`
+  - Setup: UI running
+  - Trigger generation transition
+  - Assert: UI shows new generation_id
+- [ ] 4.2.5.8.2 Test `test "UI shows KPI graph across generations"`
+  - Setup: 3 generations completed
+  - Assert: UI displays KPI trend
+- [ ] 4.2.5.8.3 Test `test "UI manual trigger button works"`
+  - Setup: UI running
+  - Send manual trigger command
+  - Assert: generation transition initiated
+
+---
+
+## 4.2.6 Application Lifecycle Tests
 
 Test application startup and shutdown.
 
-### 4.2.5.1 Setup Lifecycle Test Environment
+### 4.2.6.1 Setup Lifecycle Test Environment
 
 Configure test environment for lifecycle tests.
 
-- [ ] 4.2.5.1.1 Create `test/ant_colony/integration/application_lifecycle_test.exs`
-- [ ] 4.2.5.1.2 Add `use ExUnit.Case, async: false`
-- [ ] 4.2.5.1.3 Describe "Application lifecycle context"
+- [ ] 4.2.6.1.1 Create `test/ant_colony/integration/application_lifecycle_test.exs`
+- [ ] 4.2.6.1.2 Add `use ExUnit.Case, async: false`
+- [ ] 4.2.6.1.3 Describe "Application lifecycle context"
 
-### 4.2.5.2 Test Startup Sequence
+### 4.2.6.2 Test Startup Sequence
 
 Verify application starts correctly.
 
-- [ ] 4.2.5.2.1 Test `test "application starts all children"`
+- [ ] 4.2.6.2.1 Test `test "application starts all children"`
   - Start Application
   - Assert PubSub running
   - Assert Plane running
   - Assert AgentSupervisor running
+  - Assert ColonyIntelligenceAgent running (NEW)
   - Assert Controller running (if started)
-- [ ] 4.2.5.2.2 Test `test "application starts in reasonable time"`
+- [ ] 4.2.6.2.2 Test `test "application starts in reasonable time"`
   - Measure startup time
   - Assert < 5 seconds
-- [ ] 4.2.5.2.3 Test `test "application handles restart"`
+- [ ] 4.2.6.2.3 Test `test "application handles restart"`
   - Start Application
   - Stop Application
   - Start again
   - Assert clean start
 
-### 4.2.5.3 Test Shutdown Sequence
+### 4.2.6.3 Test Shutdown Sequence
 
 Verify application shuts down cleanly.
 
-- [ ] 4.2.5.3.1 Test `test "application stops gracefully"`
+- [ ] 4.2.6.3.1 Test `test "application stops gracefully"`
   - Start Application with ants
   - Stop Application
   - Assert all processes stopped
   - Assert no orphaned processes
-- [ ] 4.2.5.3.2 Test `test "application stops during active simulation"`
+- [ ] 4.2.6.3.2 Test `test "application stops during active simulation"`
   - Start Application with running simulation
   - Stop Application
   - Assert clean shutdown
-- [ ] 4.2.5.3.3 Test `test "UI shutdown doesn't crash simulation"`
+- [ ] 4.2.6.3.3 Test `test "UI shutdown doesn't crash simulation"`
   - Start Application with UI
   - Stop UI
   - Assert simulation continues
 
-### 4.2.5.4 Test Supervision and Fault Tolerance
+### 4.2.6.4 Test Supervision and Fault Tolerance
 
 Verify supervision tree handles failures.
 
-- [ ] 4.2.5.4.1 Test `test "Plane restarts on crash"`
+- [ ] 4.2.6.4.1 Test `test "Plane restarts on crash"`
   - Start Application
   - Kill Plane process
   - Assert Plane restarted
   - Assert state recovered or reset
-- [ ] 4.2.5.4.2 Test `test "ant crash doesn't crash Plane"`
+- [ ] 4.2.6.4.2 Test `test "ant crash doesn't crash Plane"`
   - Start Application with ants
   - Kill one ant
   - Assert Plane still running
   - Assert other ants unaffected
-- [ ] 4.2.5.4.3 Test `test "PubSub restart doesn't crash system"`
+- [ ] 4.2.6.4.3 Test `test "PubSub restart doesn't crash system"`
   - Kill PubSub
   - Assert system continues
   - Assert PubSub restarted
 
 ---
 
-## 4.2.6 Test Performance and Scalability
+## 4.2.7 Test Performance and Scalability
 
 Verify system performs adequately under load.
 
-### 4.2.6.1 Setup Performance Test Environment
+### 4.2.7.1 Setup Performance Test Environment
 
 Configure test environment for performance tests.
 
-- [ ] 4.2.6.1.1 Create `test/ant_colony/integration/performance_test.exs`
-- [ ] 4.2.6.1.2 Add `use ExUnit.Case, async: false`
-- [ ] 4.2.6.1.3 Add `@tag :performance` for conditional running
-- [ ] 4.2.6.1.4 Describe "Performance context"
+- [ ] 4.2.7.1.1 Create `test/ant_colony/integration/performance_test.exs`
+- [ ] 4.2.7.1.2 Add `use ExUnit.Case, async: false`
+- [ ] 4.2.7.1.3 Add `@tag :performance` for conditional running
+- [ ] 4.2.7.1.4 Describe "Performance context"
 
-### 4.2.6.2 Test Concurrent Ant Operations
+### 4.2.7.2 Test Concurrent Ant Operations
 
 Verify system handles many ants.
 
-- [ ] 4.2.6.2.1 Test `test "system handles 100 ants"`
+- [ ] 4.2.7.2.1 Test `test "system handles 100 ants"`
   - Start Application
   - Spawn 100 ants
   - Run for 100 ticks
   - Assert no crashes
   - Assert all ants still running
-- [ ] 4.2.6.2.2 Test `test "system handles 1000 ants"`
+- [ ] 4.2.7.2.2 Test `test "system handles 1000 ants"`
   - Start Application
   - Spawn 1000 ants
   - Run for 50 ticks
   - Assert reasonable performance (> 1 tick/sec)
-- [ ] 4.2.6.2.3 Test `test "plane operations scale with ant count"`
+- [ ] 4.2.7.2.3 Test `test "plane operations scale with ant count"`
   - Measure Plane response time
   - With 10, 100, 1000 ants
   - Assert sub-millisecond response
 
-### 4.2.6.3 Test Event Throughput
+### 4.2.7.3 Test Event Throughput
 
 Verify PubSub handles event volume.
 
-- [ ] 4.2.6.3.1 Test `test "system handles 1000 events/second"`
+- [ ] 4.2.7.3.1 Test `test "system handles 1000 events/second"`
   - Setup: 100 ants moving every tick
   - Publish events
   - Measure PubSub latency
   - Assert < 10ms latency
-- [ ] 4.2.6.3.2 Test `test "UI updates keep up with events"`
+- [ ] 4.2.7.3.2 Test `test "UI updates keep up with events"`
   - Start Application with UI
   - Generate rapid events
   - Measure UI frame rate
   - Assert > 30 FPS maintained
 
-### 4.2.6.4 Test Memory Usage
+### 4.2.7.4 Test Memory Usage
 
 Verify system doesn't leak memory.
 
-- [ ] 4.2.6.4.1 Test `test "memory usage stable over time"`
+- [ ] 4.2.7.4.1 Test `test "memory usage stable over time"`
   - Start Application
   - Run simulation for 10 minutes
   - Measure memory every minute
   - Assert no significant growth
-- [ ] 4.2.6.4.2 Test `test "many action cycles don't leak"`
+- [ ] 4.2.7.4.2 Test `test "many action cycles don't leak"`
   - Run 10,000 action cycles
   - Measure memory before/after
   - Assert minimal growth
 
 ---
 
-## 4.2.7 Phase 4.2 Integration Tests
+## 4.2.8 Phase 4.2 Integration Tests
 
 End-to-end tests for integration test infrastructure.
 
-### 4.2.7.1 Test Infrastructure Validation
+### 4.2.8.1 Test Infrastructure Validation
 
 Verify integration test framework works.
 
-- [ ] 4.2.7.1.1 Create `test/phase4/integration_tests_infrastructure_test.exs`
-- [ ] 4.2.7.1.2 Add test: `test "integration test setup works"`
-- [ ] 4.2.7.1.3 Add test: `test "all integration test files exist"`
-- [ ] 4.2.7.1.4 Add test: `test "integration tests can run in parallel where supported"`
-- [ ] 4.2.7.1.5 Add test: `test "integration test cleanup works"`
+- [ ] 4.2.8.1.1 Create `test/phase4/integration_tests_infrastructure_test.exs`
+- [ ] 4.2.8.1.2 Add test: `test "integration test setup works"`
+- [ ] 4.2.8.1.3 Add test: `test "all integration test files exist"`
+- [ ] 4.2.8.1.4 Add test: `test "integration tests can run in parallel where supported"`
+- [ ] 4.2.8.1.5 Add test: `test "integration test cleanup works"`
 
 ---
 
@@ -572,9 +723,10 @@ Verify integration test framework works.
 2. **Agent-Agent Tests**: Communication tested ✅
 3. **Simulation-UI Tests**: Event flow tested ✅
 4. **E2E Scenarios**: Complete workflows tested ✅
-5. **Lifecycle Tests**: Startup/shutdown tested ✅
-6. **Performance Tests**: System scales adequately ✅
-7. **Tests**: All integration tests pass ✅
+5. **Generational Lifecycle Tests**: Full generation transition tested ✅
+6. **Lifecycle Tests**: Startup/shutdown tested ✅
+7. **Performance Tests**: System scales adequately ✅
+8. **Tests**: All integration tests pass ✅
 
 ## Phase 4.2 Critical Files
 
@@ -583,6 +735,7 @@ Verify integration test framework works.
 - `test/ant_colony/integration/agent_communication_integration_test.exs`
 - `test/ant_colony/integration/simulation_ui_integration_test.exs`
 - `test/ant_colony/integration/e2e_scenarios_test.exs`
+- `test/ant_colony/integration/generational_lifecycle_test.exs` (NEW)
 - `test/ant_colony/integration/application_lifecycle_test.exs`
 - `test/ant_colony/integration/performance_test.exs`
 - `test/phase4/integration_tests_infrastructure_test.exs`

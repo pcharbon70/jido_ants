@@ -1,6 +1,6 @@
 # Phase 2.4: Canvas Rendering
 
-Implement detailed Canvas drawing operations for visualizing the ant colony simulation. This phase focuses on the rendering functions that draw grid elements, nest, food sources, and ants.
+Implement detailed Canvas drawing operations for visualizing the ant colony simulation. This phase focuses on the rendering functions that draw grid elements, nest, food sources, ants, and a status bar with generation information.
 
 ## Architecture
 
@@ -14,7 +14,8 @@ Canvas Rendering Pipeline
 │   ├── Layer 1: Grid Background (optional dots/lines)
 │   ├── Layer 2: Nest ("N" - white)
 │   ├── Layer 3: Food Sources ("F1"-"F5" - yellow to red gradient)
-│   └── Layer 4: Ants ("a" or "A" - red/bold)
+│   ├── Layer 4: Ants ("a" or "A" - red/bold)
+│   └── Layer 5: Status Bar (bottom - generation info)
 │
 ├── Character Mapping:
 │   ├── Nest → "N"
@@ -23,13 +24,20 @@ Canvas Rendering Pipeline
 │   ├── Ant (with food) → "A"
 │   └── Empty → " " (space)
 │
+├── Status Bar Fields:
+│   ├── Generation → "Gen: N"
+│   ├── Food Count → "Food: M/T" (delivered/trigger)
+│   ├── Ant Count → "Ants: N"
+│   └── Quit Hint → "Press 'q' to quit"
+│
 └── Color Mapping:
     ├── Nest → :white
     ├── Food Level 1 → :yellow
     ├── Food Level 2-3 → :yellow + brightness
     ├── Food Level 4-5 → :red
     ├── Ant → :red
-    └── Ant with food → :red + :bold
+    ├── Ant with food → :red + :bold
+    └── Status Bar → :dim
 ```
 
 ## Components in This Phase
@@ -41,6 +49,7 @@ Canvas Rendering Pipeline
 | UI.Canvas.draw_nest/3 | Draw nest location |
 | UI.Canvas.draw_food/3 | Draw food sources |
 | UI.Canvas.draw_ants/3 | Draw ant positions |
+| UI.Canvas.draw_status_bar/2 | Draw generation KPI status bar |
 | UI.Canvas.resolve_overlaps/2 | Handle overlapping elements |
 
 ---
@@ -273,28 +282,47 @@ Handle overlapping elements by priority.
 
 ---
 
-## 2.4.7 Add Status Bar (Optional)
+## 2.4.7 Add Status Bar
 
-Add a status bar showing simulation statistics.
+Add a status bar showing generation information and simulation statistics.
 
 ### 2.4.7.1 Draw Status Bar
 
-Render status information.
+Render status information with generation KPIs.
 
 - [ ] 2.4.7.1.1 Define `def draw_status_bar(canvas, state)`
-- [ ] 2.4.7.1.2 Position at bottom of canvas
-- [ ] 2.4.7.1.3 Display: "Ants: N | Food: M | Press 'q' to quit"
+- [ ] 2.4.7.1.2 Position at bottom of canvas (last row)
+- [ ] 2.4.7.1.3 Build status string: "Gen: {current_generation_id} | Food: {food_delivered_count}/{generation_trigger_count} | Ants: {ant_count} | Press 'q' to quit"
 - [ ] 2.4.7.1.4 Use dim color for status
 - [ ] 2.4.7.1.5 Return updated canvas
 
-### 2.4.7.2 Update Status on Events
+### 2.4.7.2 Format Generation Information
+
+Create formatted generation display string.
+
+- [ ] 2.4.7.2.1 Define `def format_gen_info(state)` helper
+- [ ] 2.4.7.2.2 Format: "Gen: {current_generation_id}"
+- [ ] 2.4.7.2.3 Highlight generation number if new generation just started
+- [ ] 2.4.7.2.4 Return formatted string
+
+### 2.4.7.3 Format Food Progress
+
+Create formatted food progress display string.
+
+- [ ] 2.4.7.3.1 Define `def format_food_progress(state)` helper
+- [ ] 2.4.7.3.2 Format: "Food: {food_delivered_count}/{generation_trigger_count}"
+- [ ] 2.4.7.3.3 Calculate percentage: (delivered / trigger) * 100
+- [ ] 2.4.7.3.4 Optionally add visual progress bar: "Food: [=====     ] 5/50"
+- [ ] 2.4.7.3.5 Return formatted string
+
+### 2.4.7.4 Update Status on Events
 
 Refresh status bar when state changes.
 
-- [ ] 2.4.7.2.1 Recalculate ant count
-- [ ] 2.4.7.2.2 Recalculate food count
-- [ ] 2.4.7.2.3 Redraw status bar with new values
-- [ ] 2.4.7.2.4 Return updated canvas
+- [ ] 2.4.7.4.1 Recalculate ant count from ant_positions map
+- [ ] 2.4.7.4.2 Use current food_delivered_count from state
+- [ ] 2.4.7.4.3 Redraw status bar with new values
+- [ ] 2.4.7.4.4 Return updated canvas
 
 ---
 
@@ -363,9 +391,13 @@ Verify count display for overlapping ants.
 
 Verify status bar rendering.
 
-- [ ] 2.4.8.7.1 Add test: `test "draw_status_bar shows correct counts"` - accuracy
-- [ ] 2.4.8.7.2 Add test: `test "draw_status_bar shows quit hint"` - content
-- [ ] 2.4.8.7.3 Add test: `test "status bar updates on events"` - updates
+- [ ] 2.4.8.7.1 Add test: `test "draw_status_bar shows correct generation ID"` - generation accuracy
+- [ ] 2.4.8.7.2 Add test: `test "draw_status_bar shows food count with trigger"` - KPI display
+- [ ] 2.4.8.7.3 Add test: `test "draw_status_bar shows ant count"` - ant count accuracy
+- [ ] 2.4.8.7.4 Add test: `test "draw_status_bar shows quit hint"` - content
+- [ ] 2.4.8.7.5 Add test: `test "status bar updates on generation change"` - generation updates
+- [ ] 2.4.8.7.6 Add test: `test "format_food_progress calculates percentage correctly"` - math
+- [ ] 2.4.8.7.7 Add test: `test "format_gen_info formats generation ID correctly"` - formatting
 
 ---
 

@@ -16,6 +16,7 @@ Implement the SenseFoodAction for detecting food at the ant's current position. 
 │  ┌────────────────────────────────────────────────────────────┐    │
 │  │  • agent.state.position - Current position to check        │    │
 │  │  • agent.state.id - Ant identifier                        │    │
+│  │  • agent.state.generation_id - Generation identifier      │    │
 │  └────────────────────────────────────────────────────────────┘    │
 │                                                                      │
 │  External Dependencies:                                              │
@@ -27,7 +28,8 @@ Implement the SenseFoodAction for detecting food at the ant's current position. 
 │  ┌────────────────────────────────────────────────────────────┐    │
 │  │  1. Query Plane for food at agent.state.position           │    │
 │  │  2. If food found: Add to known_food_sources               │    │
-│  │  3. Broadcast {:food_sensed, ant_id, position, food}       │    │
+│  │  3. Broadcast {:food_sensed, ant_id, generation_id,         │    │
+│  │     position, food}                                         │    │
 │  │  4. Return updated state with food information             │    │
 │  └────────────────────────────────────────────────────────────┘    │
 │                                                                      │

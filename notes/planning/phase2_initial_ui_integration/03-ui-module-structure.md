@@ -1,6 +1,6 @@
 # Phase 2.3: UI Module Structure
 
-Create the AntColony.UI module using the TermUI.Elm architecture pattern. This module subscribes to simulation events and renders the visualization.
+Create the AntColony.UI module using the TermUI.Elm architecture pattern. This module subscribes to simulation events, fetches generation information from ColonyIntelligenceAgent, and renders the visualization.
 
 ## Architecture
 
@@ -12,16 +12,23 @@ AntColony.UI (TermUI.Elm)
 │   ├── nest_location: {x, y}
 │   ├── food_sources: [%{pos: {x, y}, level: 1-5, quantity: integer()}]
 │   ├── ant_positions: %{ant_id => {x, y, carrying_food?}}
+│   ├── current_generation_id: pos_integer()
+│   ├── food_delivered_count: non_neg_integer()
+│   ├── generation_trigger_count: pos_integer()
 │   └── running: boolean()
 │
 ├── init/1 (TermUI.Elm callback)
 │   ├── Subscribe to Phoenix.PubSub "ui_updates" topic
 │   ├── Fetch initial state from Plane.get_full_state_for_ui/0
+│   ├── Fetch generation info from ColonyIntelligenceAgent
 │   └── Return {:ok, initial_ui_state}
 │
 ├── update/2 (TermUI.Elm callback)
 │   ├── Handle {:ant_moved, ant_id, old_pos, new_pos}
 │   ├── Handle {:food_updated, pos, new_quantity}
+│   ├── Handle {:food_delivered, ant_id, generation_id, qty, time}
+│   ├── Handle {:generation_started, generation_id}
+│   ├── Handle {:generation_ended, generation_id, metrics}
 │   ├── Handle {:ant_registered, ant_id, position}
 │   ├── Handle {:ant_unregistered, ant_id}
 │   ├── Handle %TermUI.Event.Key{key: "q"} -> [:quit]
@@ -31,6 +38,7 @@ AntColony.UI (TermUI.Elm)
     ├── Create TermUI.Widget.Canvas
     ├── Draw grid background
     ├── Draw nest, food sources, ants
+    ├── Draw status bar with generation info
     └── Return widget tree
 ```
 
@@ -70,6 +78,9 @@ Define the UI state structure.
   - `:nest_location` - default nil
   - `:food_sources` - default []
   - `:ant_positions` - default %{}
+  - `:current_generation_id` - default 1
+  - `:food_delivered_count` - default 0
+  - `:generation_trigger_count` - default 50
   - `:running` - default true
 - [ ] 2.3.1.2.2 Add `@type` specification for state struct
 - [ ] 2.3.1.2.3 Document each field in struct
@@ -79,9 +90,10 @@ Define the UI state structure.
 Import required modules.
 
 - [ ] 2.3.1.3.1 Add `alias AntColony.Plane`
-- [ ] 2.3.1.3.2 Add `alias AntColony.PubSub`
-- [ ] 2.3.1.3.3 Add `import TermUI.Widget, only: [canvas: 2]`
-- [ ] 2.3.1.3.4 Verify TermUI.Elm exports required callbacks
+- [ ] 2.3.1.3.2 Add `alias AntColony.Agent.ColonyIntelligence`
+- [ ] 2.3.1.3.3 Add `alias AntColony.PubSub`
+- [ ] 2.3.1.3.4 Add `import TermUI.Widget, only: [canvas: 2]`
+- [ ] 2.3.1.3.5 Verify TermUI.Elm exports required callbacks
 
 ---
 
@@ -96,9 +108,10 @@ Implement the TermUI.Elm init callback.
 - [ ] 2.3.2.1.1 Define `def init(opts)` function
 - [ ] 2.3.2.1.2 Extract any options from opts (e.g., auto_start)
 - [ ] 2.3.2.1.3 Call `Plane.get_full_state_for_ui()` to fetch initial state
-- [ ] 2.3.2.1.4 Build initial UI state struct from Plane response
-- [ ] 2.3.2.1.5 Subscribe to Phoenix.PubSub topic "ui_updates"
-- [ ] 2.3.2.1.6 Return `{:ok, ui_state}`
+- [ ] 2.3.2.1.4 Call `ColonyIntelligence.get_generation_info()` to fetch generation data
+- [ ] 2.3.2.1.5 Build initial UI state struct from Plane and ColonyIntelligence responses
+- [ ] 2.3.2.1.6 Subscribe to Phoenix.PubSub topic "ui_updates"
+- [ ] 2.3.2.1.7 Return `{:ok, ui_state}`
 
 ### 2.3.2.2 Subscribe to PubSub
 
@@ -111,14 +124,17 @@ Set up PubSub subscription for simulation events.
 
 ### 2.3.2.3 Build Initial UI State
 
-Transform Plane state to UI state format.
+Transform Plane state and ColonyIntelligence state to UI state format.
 
 - [ ] 2.3.2.3.1 Extract width from Plane response
 - [ ] 2.3.2.3.2 Extract height from Plane response
 - [ ] 2.3.2.3.3 Extract nest_location from Plane response
 - [ ] 2.3.2.3.4 Extract food_sources from Plane response
 - [ ] 2.3.2.3.5 Initialize ant_positions as empty map (populated via events)
-- [ ] 2.3.2.3.6 Set running to true
+- [ ] 2.3.2.3.6 Extract current_generation_id from ColonyIntelligence response
+- [ ] 2.3.2.3.7 Extract food_delivered_count from ColonyIntelligence response
+- [ ] 2.3.2.3.8 Extract generation_trigger_count from ColonyIntelligence response
+- [ ] 2.3.2.3.9 Set running to true
 
 ---
 
@@ -144,47 +160,72 @@ Update food sources on food quantity changes.
 - [ ] 2.3.3.2.3 Update quantity field (remove if 0)
 - [ ] 2.3.3.2.4 Return `{:noreply, updated_state}`
 
-### 2.3.3.3 Handle ant_registered Events
+### 2.3.3.3 Handle food_delivered Events
+
+Update KPI tracking when food is delivered to nest.
+
+- [ ] 2.3.3.3.1 Add clause: `def update({:food_delivered, ant_id, generation_id, qty, time}, state)`
+- [ ] 2.3.3.3.2 Update food_delivered_count if generation_id matches current
+- [ ] 2.3.3.3.3 Return `{:noreply, updated_state}`
+
+### 2.3.3.4 Handle generation_started Events
+
+Update generation ID when new generation starts.
+
+- [ ] 2.3.3.4.1 Add clause: `def update({:generation_started, generation_id}, state)`
+- [ ] 2.3.3.4.2 Update current_generation_id to new value
+- [ ] 2.3.3.4.3 Reset food_delivered_count to 0
+- [ ] 2.3.3.4.4 Return `{:noreply, updated_state}`
+
+### 2.3.3.5 Handle generation_ended Events
+
+Update KPI display when generation ends (optional visualization).
+
+- [ ] 2.3.3.5.1 Add clause: `def update({:generation_ended, generation_id, metrics}, state)`
+- [ ] 2.3.3.5.2 Log generation end with metrics (optional)
+- [ ] 2.3.3.5.3 Return `{:noreply, state}` (no state change needed)
+
+### 2.3.3.6 Handle ant_registered Events
 
 Track new ants joining the simulation.
 
-- [ ] 2.3.3.3.1 Add clause: `def update({:ant_registered, ant_id, position}, state)`
-- [ ] 2.3.3.3.2 Add new ant to ant_positions map
-- [ ] 2.3.3.3.3 Initialize with carrying_food: false
-- [ ] 2.3.3.3.4 Return `{:noreply, updated_state}`
+- [ ] 2.3.3.6.1 Add clause: `def update({:ant_registered, ant_id, position}, state)`
+- [ ] 2.3.3.6.2 Add new ant to ant_positions map
+- [ ] 2.3.3.6.3 Initialize with carrying_food: false
+- [ ] 2.3.3.6.4 Return `{:noreply, updated_state}`
 
-### 2.3.3.4 Handle ant_unregistered Events
+### 2.3.3.7 Handle ant_unregistered Events
 
 Remove ants that have left the simulation.
 
-- [ ] 2.3.3.4.1 Add clause: `def update({:ant_unregistered, ant_id}, state)`
-- [ ] 2.3.3.4.2 Remove ant from ant_positions map
-- [ ] 2.3.3.4.3 Return `{:noreply, updated_state}`
+- [ ] 2.3.3.7.1 Add clause: `def update({:ant_unregistered, ant_id}, state)`
+- [ ] 2.3.3.7.2 Remove ant from ant_positions map
+- [ ] 2.3.3.7.3 Return `{:noreply, updated_state}`
 
-### 2.3.3.5 Handle Keyboard Events
+### 2.3.3.8 Handle Keyboard Events
 
 Enable quit functionality via keyboard.
 
-- [ ] 2.3.3.5.1 Add clause: `def update(%TermUI.Event.Key{key: "q"}, state)`
-- [ ] 2.3.3.5.2 Set running to false
-- [ ] 2.3.3.5.3 Return `{:noreply, updated_state, [:quit]}`
-- [ ] 2.3.3.5.4 Document quit key in help text
+- [ ] 2.3.3.8.1 Add clause: `def update(%TermUI.Event.Key{key: "q"}, state)`
+- [ ] 2.3.3.8.2 Set running to false
+- [ ] 2.3.3.8.3 Return `{:noreply, updated_state, [:quit]}`
+- [ ] 2.3.3.8.4 Document quit key in help text
 
-### 2.3.3.6 Handle Window Events
+### 2.3.3.9 Handle Window Events
 
 Handle terminal resize events (optional).
 
-- [ ] 2.3.3.6.1 Add clause: `def update(%TermUI.Event.Window{event: :resized}, state)`
-- [ ] 2.3.3.6.2 Update width and height from terminal size
-- [ ] 2.3.3.6.3 Return `{:noreply, updated_state}`
+- [ ] 2.3.3.9.1 Add clause: `def update(%TermUI.Event.Window{event: :resized}, state)`
+- [ ] 2.3.3.9.2 Update width and height from terminal size
+- [ ] 2.3.3.9.3 Return `{:noreply, updated_state}`
 
-### 2.3.3.7 Handle Unknown Events
+### 2.3.3.10 Handle Unknown Events
 
 Catch-all for unexpected messages.
 
-- [ ] 2.3.3.7.1 Add catch-all clause: `def update(msg, state)`
-- [ ] 2.3.3.7.2 Log unknown message with Logger.debug
-- [ ] 2.3.3.7.3 Return `{:noreply, state}` unchanged
+- [ ] 2.3.3.10.1 Add catch-all clause: `def update(msg, state)`
+- [ ] 2.3.3.10.2 Log unknown message with Logger.debug
+- [ ] 2.3.3.10.3 Return `{:noreply, state}` unchanged
 
 ---
 
@@ -199,7 +240,8 @@ Implement the TermUI.Elm view callback.
 - [ ] 2.3.4.1.1 Define `def view(state)` function
 - [ ] 2.3.4.1.2 Create Canvas widget with dimensions from state
 - [ ] 2.3.4.1.3 Call helper functions to draw elements
-- [ ] 2.3.4.1.4 Return widget tree
+- [ ] 2.3.4.1.4 Create status bar with generation info
+- [ ] 2.3.4.1.5 Return widget tree
 
 ### 2.3.4.2 Create Canvas Widget
 
@@ -238,6 +280,15 @@ Render all ant positions.
 - [ ] 2.3.4.5.3 Draw "a" (no food) or "A" (with food) at position
 - [ ] 2.3.4.5.4 Apply red color
 - [ ] 2.3.4.5.5 Handle multiple ants at same position (optional)
+
+### 2.3.4.6 Draw Status Bar
+
+Render status bar with generation information.
+
+- [ ] 2.3.4.6.1 Build status string: "Gen: {current_generation_id} | Food: {food_delivered_count}/{generation_trigger_count} | Ants: {ant_count}"
+- [ ] 2.3.4.6.2 Position status bar at bottom of canvas
+- [ ] 2.3.4.6.3 Apply dim color for status text
+- [ ] 2.3.4.6.4 Include "Press 'q' to quit" hint
 
 ---
 

@@ -20,7 +20,11 @@ Observability Infrastructure
 │   [:ant_colony, :communication, :encounter]
 │   [:ant_colony, :ml, :model_updated]
 │   [:ant_colony, :pheromone, :laid]
-│   └── [:ant_colony, :simulation, :tick]
+│   [:ant_colony, :simulation, :tick]
+│   [:ant_colony, :generation, :started] (NEW)
+│   [:ant_colony, :generation, :ended] (NEW)
+│   [:ant_colony, :generation, :kpi_updated] (NEW)
+│   [:ant_colony, :generation, :breeding_completed] (NEW)
 │
 ├── Metrics Collection
 │   ├── Agent Count by State
@@ -29,13 +33,16 @@ Observability Infrastructure
 │   ├── ML Training Progress
 │   ├── UI Frame Rate
 │   ├── Memory Usage
-│   └── Message Queue Lengths
+│   ├── Message Queue Lengths
+│   ├── Generation KPIs (NEW)
+│   └── Historical KPI Trends (NEW)
 │
 ├── Tracing
 │   ├── Action Execution Traces
 │   ├── Agent Lifecycle Traces
 │   ├── Communication Traces
-│   └── Request-Response Correlation
+│   ├── Request-Response Correlation
+│   └── Generation Transition Traces (NEW)
 │
 └── Jido Integration
     ├── Jido.Observe
@@ -164,6 +171,18 @@ Document all telemetry events with their metadata structure.
 - [ ] 4.4.2.2.7 Define `[:ant_colony, :simulation, :tick]` event:
   - Measurements: `tick_duration`
   - Metadata: `tick_number`, `active_agent_count`
+- [ ] 4.4.2.2.8 Define `[:ant_colony, :generation, :started]` event (NEW):
+  - Measurements: `generation_duration` (0 at start)
+  - Metadata: `generation_id`, `start_time`, `parent_generation_id`
+- [ ] 4.4.2.2.9 Define `[:ant_colony, :generation, :ended]` event (NEW):
+  - Measurements: `generation_duration`, `food_collected`
+  - Metadata: `generation_id`, `end_reason` (plateau/training_complete/manual)
+- [ ] 4.4.2.2.10 Define `[:ant_colony, :generation, :kpi_updated]` event (NEW):
+  - Measurements: kpi values
+  - Metadata: `generation_id`, `kpi_name`, `value`
+- [ ] 4.4.2.2.11 Define `[:ant_colony, :generation, :breeding_completed]` event (NEW):
+  - Measurements: `breeding_duration`
+  - Metadata: `generation_id`, `parent_count`, `offspring_count`
 
 ### 4.4.2.3 Create Telemetry Emitter Functions
 
@@ -176,6 +195,10 @@ Create helper functions to emit telemetry events consistently.
 - [ ] 4.4.2.3.5 Define `emit_ml_updated/4` helper
 - [ ] 4.4.2.3.6 Define `emit_pheromone_laid/4` helper
 - [ ] 4.4.2.3.7 Define `emit_simulation_tick/3` helper
+- [ ] 4.4.2.3.8 Define `emit_generation_started/3` helper (NEW)
+- [ ] 4.4.2.3.9 Define `emit_generation_ended/4` helper (NEW)
+- [ ] 4.4.2.3.10 Define `emit_kpi_updated/4` helper (NEW)
+- [ ] 4.4.2.3.11 Define `emit_breeding_completed/4` helper (NEW)
 
 ### 4.4.2.4 Integrate Telemetry into Actions
 
@@ -206,18 +229,30 @@ Emit telemetry for agent state changes.
 - [ ] 4.4.2.6.2 Emit telemetry on communication encounters
 - [ ] 4.4.2.6.3 Emit telemetry on agent death
 
-### 4.4.2.7 Unit Tests for Telemetry
+### 4.4.2.7 Integrate Telemetry into ColonyIntelligenceAgent (NEW)
+
+Emit telemetry for generation lifecycle events.
+
+- [ ] 4.4.2.7.1 Emit telemetry on generation start
+- [ ] 4.4.2.7.2 Emit telemetry on generation end
+- [ ] 4.4.2.7.3 Emit telemetry on KPI updates
+- [ ] 4.4.2.7.4 Emit telemetry on breeding completion
+- [ ] 4.4.2.7.5 Emit telemetry on plateau detection
+- [ ] 4.4.2.7.6 Emit telemetry on manual generation trigger
+
+### 4.4.2.8 Unit Tests for Telemetry
 
 Test telemetry event emission.
 
-- [ ] 4.4.2.7.1 Test `emit_action_execute/4` emits correct event
-- [ ] 4.4.2.7.2 Test `emit_state_change/4` includes state values
-- [ ] 4.4.2.7.3 Test `emit_food_updated/4` measures quantity
-- [ ] 4.4.2.7.4 Test `emit_communication/4` includes both agents
-- [ ] 4.4.2.7.5 Test `emit_ml_updated/4` includes training metrics
-- [ ] 4.4.2.7.6 Test telemetry emitted from actual Action execution
-- [ ] 4.4.2.7.7 Test telemetry emitted from Plane operations
-- [ ] 4.4.2.7.8 Test telemetry emitted from Agent operations
+- [ ] 4.4.2.8.1 Test `emit_action_execute/4` emits correct event
+- [ ] 4.4.2.8.2 Test `emit_state_change/4` includes state values
+- [ ] 4.4.2.8.3 Test `emit_food_updated/4` measures quantity
+- [ ] 4.4.2.8.4 Test `emit_communication/4` includes both agents
+- [ ] 4.4.2.8.5 Test `emit_ml_updated/4` includes training metrics
+- [ ] 4.4.2.8.6 Test telemetry emitted from actual Action execution
+- [ ] 4.4.2.8.7 Test telemetry emitted from Plane operations
+- [ ] 4.4.2.8.8 Test telemetry emitted from Agent operations
+- [ ] 4.4.2.8.9 Test generation telemetry emitted correctly (NEW)
 
 ---
 
@@ -241,6 +276,9 @@ Implement a GenServer to collect and aggregate metrics.
   - `:ui_fps` - current frame rate
   - `:memory_usage` - MB
   - `:message_queue_lengths` - map of process to length
+  - `:current_generation_id` - current generation (NEW)
+  - `:generation_kpis` - current generation KPIs (NEW)
+  - `:generation_history` - historical KPIs per generation (NEW)
 - [ ] 4.4.3.1.5 Add `@type` specifications
 
 ### 4.4.3.2 Implement Metrics Collection
@@ -254,6 +292,9 @@ Collect metrics from various sources.
 - [ ] 4.4.3.2.5 Sample UI frame rate from TermUI events
 - [ ] 4.4.3.2.6 Read memory usage from `:erlang.memory/0`
 - [ ] 4.4.3.2.7 Sample message queue lengths from `Process.info/2`
+- [ ] 4.4.3.2.8 Track current_generation_id from ColonyIntelligenceAgent (NEW)
+- [ ] 4.4.3.2.9 Collect generation KPIs on generation end (NEW)
+- [ ] 4.4.3.2.10 Store generation KPIs in history (NEW)
 
 ### 4.4.3.3 Implement Metrics Query API
 
@@ -265,6 +306,9 @@ Create client functions to query metrics.
 - [ ] 4.4.3.3.4 Define `def get_pheromone_stats/0` - returns pheromone metrics
 - [ ] 4.4.3.3.5 Define `def get_ml_stats/0` - returns ML metrics
 - [ ] 4.4.3.3.6 Define `def get_performance_stats/0` - returns FPS, memory, queues
+- [ ] 4.4.3.3.7 Define `def get_generation_kpis/0` - returns current generation KPIs (NEW)
+- [ ] 4.4.3.3.8 Define `def get_generation_history/0` - returns all generation KPIs (NEW)
+- [ ] 4.4.3.3.9 Define `def get_generation_kpi(generation_id)` - returns specific generation KPIs (NEW)
 
 ### 4.4.3.4 Implement Metrics Reporting
 
@@ -274,6 +318,8 @@ Create periodic metrics reporting.
 - [ ] 4.4.3.4.2 Store historical metrics for trend analysis
 - [ ] 4.4.3.4.3 Implement sliding window for rate calculations
 - [ ] 4.4.3.4.4 Add metrics reset functionality
+- [ ] 4.4.3.4.5 Store generation KPIs on generation end (NEW)
+- [ ] 4.4.3.4.6 Implement generation KPI trend tracking (NEW)
 
 ### 4.4.3.5 Unit Tests for Metrics
 
@@ -287,6 +333,8 @@ Test metrics collection and aggregation.
 - [ ] 4.4.3.5.6 Test `get_metrics/0` returns all fields
 - [ ] 4.4.3.5.7 Test metrics reset functionality
 - [ ] 4.4.3.5.8 Test sliding window rate calculations
+- [ ] 4.4.3.5.9 Test generation KPI tracking (NEW)
+- [ ] 4.4.3.5.10 Test generation history storage (NEW)
 
 ---
 
@@ -326,27 +374,40 @@ Add tracing for agent lifecycle events.
 - [ ] 4.4.4.3.2 Trace state transitions with parent trace from action
 - [ ] 4.4.4.3.3 Trace communication events between agents
 
-### 4.4.4.4 Implement Trace Storage
+### 4.4.4.4 Integrate Tracing into Generation Transitions (NEW)
+
+Add tracing for generation lifecycle.
+
+- [ ] 4.4.4.4.1 Trace generation start with generation_id
+- [ ] 4.4.4.4.2 Trace evaluation phase with ranked agents
+- [ ] 4.4.4.4.3 Trace breeding phase with parent/offspring
+- [ ] 4.4.4.4.4 Trace spawning phase with new generation_id
+- [ ] 4.4.4.4.5 Link generation spans across the full transition
+
+### 4.4.4.5 Implement Trace Storage
 
 Store traces for querying and analysis.
 
-- [ ] 4.4.4.4.1 Create `TraceStore` GenServer for trace storage
-- [ ] 4.4.4.4.2 Implement ring buffer for recent traces (limit: 1000)
-- [ ] 4.4.4.4.3 Add `def get_trace/1` - retrieve by trace_id
-- [ ] 4.4.4.4.4 Add `def get_recent_traces/1` - retrieve N recent traces
-- [ ] 4.4.4.4.5 Add `def get_traces_for_ant/1` - retrieve by ant_id
+- [ ] 4.4.4.5.1 Create `TraceStore` GenServer for trace storage
+- [ ] 4.4.4.5.2 Implement ring buffer for recent traces (limit: 1000)
+- [ ] 4.4.4.5.3 Add `def get_trace/1` - retrieve by trace_id
+- [ ] 4.4.4.5.4 Add `def get_recent_traces/1` - retrieve N recent traces
+- [ ] 4.4.4.5.5 Add `def get_traces_for_ant/1` - retrieve by ant_id
+- [ ] 4.4.4.5.6 Add `def get_traces_for_generation/1` - retrieve by generation_id (NEW)
 
-### 4.4.4.5 Unit Tests for Tracing
+### 4.4.4.6 Unit Tests for Tracing
 
 Test tracing functionality.
 
-- [ ] 4.4.4.5.1 Test `new_trace/0` generates unique IDs
-- [ ] 4.4.4.5.2 Test `new_span/1` generates unique IDs
-- [ ] 4.4.4.5.3 Test `start_span/2` and `end_span/2` correlate
-- [ ] 4.4.4.5.4 Test `trace_action/3` wraps execution correctly
-- [ ] 4.4.4.5.5 Test trace storage and retrieval
-- [ ] 4.4.4.5.6 Test ring buffer eviction
-- [ ] 4.4.4.5.7 Test `get_traces_for_ant/1` filtering
+- [ ] 4.4.4.6.1 Test `new_trace/0` generates unique IDs
+- [ ] 4.4.4.6.2 Test `new_span/1` generates unique IDs
+- [ ] 4.4.4.6.3 Test `start_span/2` and `end_span/2` correlate
+- [ ] 4.4.4.6.4 Test `trace_action/3` wraps execution correctly
+- [ ] 4.4.4.6.5 Test trace storage and retrieval
+- [ ] 4.4.4.6.6 Test ring buffer eviction
+- [ ] 4.4.4.6.7 Test `get_traces_for_ant/1` filtering
+- [ ] 4.4.4.6.8 Test generation span linking (NEW)
+- [ ] 4.4.4.6.9 Test `get_traces_for_generation/1` (NEW)
 
 ---
 
@@ -360,8 +421,9 @@ Use Jido's observation capabilities.
 
 - [ ] 4.4.5.1.1 Review Jido.Observe API documentation
 - [ ] 4.4.5.1.2 Attach Jido.Observe to AntAgent processes
-- [ ] 4.4.5.1.3 Configure observation handlers for agent events
-- [ ] 4.4.5.1.4 Forward observed events to telemetry
+- [ ] 4.4.5.1.3 Attach Jido.Observe to ColonyIntelligenceAgent (NEW)
+- [ ] 4.4.5.1.4 Configure observation handlers for agent events
+- [ ] 4.4.5.1.5 Forward observed events to telemetry
 
 ### 4.4.5.2 Integrate Jido.Telemetry
 
@@ -473,6 +535,9 @@ Ensure observability doesn't degrade simulation performance.
 4. **Tracing**: Action execution traces captured and correlated ✅
 5. **Jido Integration**: Jido observability features leveraged ✅
 6. **CLI Tools**: Mix tasks for querying observability data ✅
+7. **Generation Telemetry**: Generation lifecycle events emitted ✅
+8. **Generation KPIs**: Historical KPIs tracked and queryable ✅
+9. **Generation Traces**: Generation transition spans captured ✅
 
 ## Phase 4.4 Critical Files
 
@@ -492,6 +557,7 @@ Ensure observability doesn't degrade simulation performance.
 - All Action modules - telemetry and logging calls
 - `lib/ant_colony/plane.ex` - telemetry and logging calls
 - `lib/ant_colony/agent.ex` - telemetry and logging calls
+- `lib/ant_colony/colony_intelligence_agent.ex` - generation telemetry (NEW)
 - `mix.exs` - telemetry dependency
 
 **Test Files:**
