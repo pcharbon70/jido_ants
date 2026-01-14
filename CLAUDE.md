@@ -4,96 +4,93 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **research repository** for designing an ant colony intelligence simulation using Elixir. The project is in the architectural research phase with comprehensive documentation but no implementation code yet.
+This is a **research and documentation project** for simulating ant colony intelligence using distributed foraging architecture with Jido v2. The project is in the planning/research phase—no implementation code exists yet.
 
-The goal is to create a multi-agent simulation where:
-- Individual ants are implemented as **Jido v2** agents (autonomous agent framework for Elixir)
-- Ants operate on a 2D grid plane with food sources
-- Communication occurs via **pheromone trails** (stigmergic) and **direct ant-to-ant exchange** (within 3-unit radius)
-- Machine learning via **Axon** and **Bumblebee** enables ants to learn optimal foraging patterns
+**Technology Stack:**
+- **Language:** Elixir
+- **Agent Framework:** Jido v2 (autonomous agent framework)
+- **Machine Learning:** Axon (neural networks) and Bumblebee (pre-trained models)
+- **UI:** Terminal UI using `term_ui` library (Elm Architecture-inspired)
+- **Communication:** Phoenix.PubSub for event-driven architecture
 
-## Key Technologies
+## Project Status
 
-- **Elixir/OTP** - Primary language, chosen for concurrency and fault tolerance
-- **Jido v2** - Agent framework for creating autonomous, stateful agents with composable actions
-- **Axon** - Deep learning library for neural networks (built on Nx)
-- **Bumblebee** - Pre-trained neural network models
-- **Nx** - Numerical computing backend (Elixir's equivalent to NumPy)
+**Current Phase:** Research and documentation. No `mix.exs`, no source code, no build system exists.
 
-## Architecture
+**Research Documents:**
+- `notes/research/original_research.md` - Comprehensive architecture paper covering AntAgent schema, Plane environment, pheromone communication, ML integration
+- `notes/research/terminal_ui.md` - Terminal UI architecture using term_ui with Elm pattern (init/update/view cycle)
+- `notes/research/development_cycles.md` - Iterative development workflow guidance
 
-### Agent Design (AntAgent)
+## Planned Architecture
 
-Each ant is a Jido agent with:
-- **State schema**: `id`, `position`, `nest_position`, `path_memory`, `current_state`, `has_food?`, `carried_food_level`, `known_food_sources`, `energy`
-- **FSM states**: `:at_nest`, `:searching`, `:returning_to_nest`, `:communicating`
-- **Actions**: `MoveAction`, `SenseFoodAction`, `PickUpFoodAction`, `DropFoodAction`, `LayPheromoneAction`, `SensePheromoneAction`, `RetracePathAction`, `CommunicateAction`
-- **Skills** (modular groups): `ForagingSkill`, `NavigationSkill`, `SocialSkill`
+### Core Components
 
-### Environment (The Plane)
+**AntAgent (Jido Agent)**
+- State schema: `id`, `position`, `path_memory`, `has_food?`, `current_state`, `known_food_sources`, `energy`
+- FSM states: `:at_nest`, `:searching`, `:returning_to_nest`, `:communicating`
+- Actions: `MoveAction`, `SenseFoodAction`, `PickUpFoodAction`, `DropFoodAction`, `LayPheromoneAction`, `CommunicateAction`, `RetracePathAction`
+- Skills: Modular groupings like `ForagingSkill`, `NavigationSkill`, `SocialSkill`
 
-The simulated environment manages:
-- Grid dimensions and boundaries
-- Food sources (position, nutrient level 1-5, quantity)
-- Pheromone fields with evaporation
-- Agent proximity detection for communication
+**Plane (Environment GenServer)**
+- Manages grid dimensions, nest location, food sources (with levels 1-5), pheromone fields
+- Handles proximity detection for ant-to-ant communication (3-square radius)
+- Publishes events via Phoenix.PubSub for UI updates
+- Manages pheromone evaporation via periodic tasks
 
-### Communication
+**Communication Mechanisms**
+- **Pheromones:** Indirect stigmergic communication laid by returning ants, intensity proportional to food quality
+- **Direct Exchange:** Ants within 3-unit radius share `known_food_sources`, higher nutrient paths override lower ones
 
-1. **Pheromone-based**: Ants returning with food lay pheromone trails; intensity proportional to food quality
-2. **Direct exchange**: When ants within 3-unit radius meet, they share known food sources; highest quality source is adopted by both
+**Terminal UI (AntColonyUI)**
+- Implements `TermUI.Elm` behaviour with `init/1`, `update/2`, `view/1` cycle
+- Subscribes to Phoenix.PubSub topic `"ui_updates"` for simulation events
+- Uses `TermUI.Widget.Canvas` for grid-based visualization
+- Events: `{:ant_moved, ant_id, old_pos, new_pos}`, `{:food_updated, pos, new_quantity}`
 
-### Machine Learning Integration
+## Development Workflow
 
-Axon models will be used for:
-- **Predictive Path Quality**: Predict likelihood of finding food based on pheromone levels, historical success rates, environmental features
-- **Adaptive ACO Parameters**: Dynamically adjust α (pheromone importance), β (heuristic importance), ρ (evaporation rate) based on colony performance
+**When implementation begins**, follow the iterative approach from `notes/research/development_cycles.md`:
 
-## Project Structure (Planned)
+1. **Phase 1:** Foundational simulation skeleton (AntAgent with basic MoveAction, Plane GenServer, event publishing via PubSub)
+2. **Phase 2:** Initial UI integration (TermUI.Elm module, Canvas grid visualization)
+3. **Phase 3:** Iterative enhancement cycles (pheromones, foraging logic, communication, ML integration)
+4. **Phase 4:** Testing and debugging (unit tests, integration tests, UI debugging)
 
+**Key Principle:** Within each iteration, implement simulation changes before or in tandem with UI changes. The simulation must publish events immediately upon state changes (e.g., ant movement must broadcast `{:ant_moved, ...}` right away).
+
+## Machine Learning Integration (Planned)
+
+- **Axon** for custom neural networks (path quality prediction, ACO parameter tuning)
+- **Bumblebee** for pre-trained models (if complex sensory inputs are added later)
+- Training occurs in dedicated "trainer" agent; models distributed to ants via signals
+- Data collected from foraging trips: paths taken, time, energy expended, food quality found
+
+## Event-Driven Communication
+
+All simulation-to-UI communication uses Phoenix.PubSub:
+- Topic: `"ui_updates"` (configurable)
+- Published by: `AntAgent` actions (movement) and `Plane` (food updates, world initialization)
+- Consumed by: `AntColonyUI` module which subscribes on initialization
+
+UI-to-simulation commands (pause/resume, speed control) flow via GenServer calls or PubSub command events.
+
+## Ant Colony Optimization (ACO) Principles
+
+Path selection probability uses classic ACO formula:
 ```
-jido_ants/
-├── mix.exs          # Project dependencies
-├── lib/
-│   ├── ant_colony/
-│   │   ├── plane.ex         # Environment GenServer
-│   │   ├── agent/
-│   │   │   └── ant.ex       # AntAgent definition
-│   │   ├── actions/         # Individual action modules
-│   │   └── skills/          # Reusable skill modules
-├── notes/
-│   └── research/
-│       └── original_research.md  # Comprehensive architecture document
+P(i→j) ∝ τ_ij^α * η_ij^β
 ```
+- τ = pheromone level
+- η = heuristic desirability
+- α, β = relative importance parameters
+- Evaporation rate ρ prevents stagnation
 
-## Dependencies (mix.exs)
+## Implementation Notes
 
-```elixir
-defp deps do
-  [
-    {:jido, "~> 2.0"},      # Core agent framework
-    {:axon, "~> 0.x"},      # Neural network construction
-    {:bumblebee, "~> 0.x"}, # Pre-trained models
-    {:nx, "~> 0.x"},        # Numerical computing backend
-    # Optional: {:exla, "~> 0.x"}  # GPU acceleration for Nx
-  ]
-end
-```
-
-## Design Reference
-
-The complete architectural specification is in `notes/research/original_research.md`. Key sections:
-- Section 2.1: Ant Colony Optimization (ACO) principles
-- Section 2.2: Jido v2 framework architecture
-- Section 3.1: AntAgent state machine and actions
-- Section 3.2: Environment (Plane) design
-- Section 3.3: Communication mechanisms
-- Section 3.4: ML integration with Axon/Bumblebee
-- Section 4: Implementation workflow
-
-## Development Notes
-
-- Use **Jido.AgentServer** to run individual AntAgent instances
-- Agents communicate via **Jido.Signal** with directives (`Emit`, `Schedule`, `Spawn`, `Stop`)
-- The **Plane** can be implemented as either a GenServer or a Jido agent itself
-- For proximity detection, consider spatial partitioning (PubSub topics by region) for scalability
+When code is added:
+- Use `Jido.AgentServer` to run individual AntAgent instances
+- Use `Jido.Signal.Emit` directive for side effects in actions
+- Use Zoi or NimbleOptions for schema validation
+- Pheromone intensity = `carried_food_level * constant`
+- Food levels 1-5; ants only pick up if level > 2
