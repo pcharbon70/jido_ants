@@ -65,7 +65,21 @@ defmodule AntColony.Plane do
     {width, opts} = Keyword.pop(opts, :width, 50)
     {height, opts} = Keyword.pop(opts, :height, 50)
 
+    # Always register with the module name for easy access
+    opts = Keyword.put(opts, :name, __MODULE__)
+
     GenServer.start_link(__MODULE__, {width, height}, opts)
+  end
+
+  @doc false
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      restart: :permanent,
+      shutdown: 5000,
+      type: :worker
+    }
   end
 
   @doc """
