@@ -226,6 +226,49 @@ defmodule AntColony.Plane do
     GenServer.call(__MODULE__, {:deplete_food, position, amount})
   end
 
+  @doc """
+  Finds all ants within a given radius of a position.
+
+  Uses Euclidean distance for proximity calculation. Optionally excludes
+  a specific ant_id (useful for ant-to-ant communication to exclude self).
+
+  ## Parameters
+
+  * `position` - Center position {x, y}
+  * `radius` - Search radius
+  * `opts` - Optional keyword list:
+    * `exclude_ant_id` - Ant ID to exclude from results
+
+  ## Returns
+
+  List of `{ant_id, position}` tuples within the radius.
+
+  ## Examples
+
+      # Find all ants within 3 units of position {10, 10}
+      nearby = AntColony.Plane.get_nearby_ants({10, 10}, 3)
+      # => [{"ant_1", {11, 10}}, {"ant_2", {10, 12}}]
+
+      # Find nearby ants excluding self
+      nearby = AntColony.Plane.get_nearby_ants({10, 10}, 3, exclude_ant_id: "ant_1")
+  """
+  @spec get_nearby_ants(State.position(), number(), keyword()) :: [{String.t(), State.position()}]
+  def get_nearby_ants(position, radius, opts \\ []) when is_tuple(position) and is_number(radius) and radius >= 0 do
+    exclude_ant_id = Keyword.get(opts, :exclude_ant_id)
+
+    GenServer.call(__MODULE__, {:get_nearby_ants, position, radius, exclude_ant_id})
+  end
+
+  # Private Helper Functions
+
+  @doc false
+  @spec distance_squared(State.position(), State.position()) :: number()
+  defp distance_squared({x1, y1}, {x2, y2}) do
+    dx = x2 - x1
+    dy = y2 - y1
+    dx * dx + dy * dy
+  end
+
   # GenServer Callbacks
 
   @impl true
@@ -319,6 +362,21 @@ defmodule AntColony.Plane do
             {:reply, {:ok, 0}, %{state | food_sources: new_sources}}
         end
     end
+  end
+
+  @impl true
+  def handle_call({:get_nearby_ants, position, radius, exclude_ant_id}, _from, state) do
+    nearby =
+      state.ant_positions
+      |> Enum.filter(fn {ant_id, _ant_pos} ->
+        ant_id != exclude_ant_id
+      end)
+      |> Enum.filter(fn {_ant_id, ant_pos} ->
+        distance_squared(position, ant_pos) <= radius * radius
+      end)
+      |> Enum.to_list()
+
+    {:reply, nearby, state}
   end
 
   @impl true
